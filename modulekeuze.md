@@ -1,4 +1,4 @@
-# 5.1 Module-keuze vastleggen
+Module-keuze vastleggen
 
 ## Gekozen module
 

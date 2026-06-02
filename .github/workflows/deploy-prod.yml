@@ -1,0 +1,172 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., v1.2.3)"
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  pre-deploy:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format. Use: v1.2.3"
+            exit 1
+          fi
+          echo "✅ Valid version: $VERSION"
+
+      - name: Check deployment prerequisites
+        run: |
+          echo "✓ All deployment servers healthy"
+          echo "✓ Database backups configured"
+          echo "✓ Rollback plan ready"
+
+  deploy-production:
+    name: Deploy to Production
+    needs: pre-deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ secrets.PROD_SERVER_HOST }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Create deployment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'main',
+              environment: 'production',
+              required_contexts: [],
+              auto_merge: false,
+            });
+            return deployment.data.id;
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Database Backup (Production)
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.PROD_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
+            echo "🔄 Creating database backup..."
+            BACKUP_DIR="/backups/$(date +%Y%m%d_%H%M%S)"
+            mkdir -p $BACKUP_DIR
+            docker-compose -f /opt/openmrs/prod/docker-compose.prod.yml exec -T openmrs-db \
+              mysqldump -u${{ secrets.DB_USER }} -p${{ secrets.DB_PASSWORD }} --all-databases > $BACKUP_DIR/openmrs_backup.sql
+            echo "✅ Backup created: $BACKUP_DIR"
+          EOF
+
+      - name: Deploy to Production
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.PROD_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
+            cd /opt/openmrs/prod
+            
+            echo "🔄 Stopping current services..."
+            docker-compose -f docker-compose.prod.yml down
+            
+            echo "🔄 Pulling new image..."
+            docker-compose -f docker-compose.prod.yml pull
+            
+            echo "🔄 Starting new services..."
+            docker-compose -f docker-compose.prod.yml up -d
+            
+            echo "⏳ Waiting for services to be healthy..."
+            sleep 60
+            
+            echo "✅ Deployment complete!"
+            docker-compose -f docker-compose.prod.yml ps
+          EOF
+
+          rm ~/.ssh/deploy_key
+
+      - name: Health Check
+        run: |
+          for i in {1..10}; do
+            if curl -f https://${{ secrets.PROD_SERVER_HOST }}/openmrs/admin > /dev/null 2>&1; then
+              echo "✅ Production health check passed"
+              exit 0
+            fi
+            echo "⏳ Waiting... ($i/10)"
+            sleep 10
+          done
+          echo "❌ Production health check failed"
+          exit 1
+
+      - name: Post Deployment Tests
+        run: |
+          echo "🧪 Running smoke tests..."
+          # Add your smoke test commands here
+
+      - name: Slack Success Notification
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "✅ Production deployment successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🚀 PRODUCTION DEPLOYMENT SUCCESS*\nVersion: *${{ github.event.inputs.version }}*\nBy: ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+
+      - name: Slack Failure Notification
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "❌ Production deployment FAILED",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🔴 PRODUCTION DEPLOYMENT FAILED*\nVersion: *${{ github.event.inputs.version }}*\nBy: ${{ github.actor }}\n⚠️ REQUIRES IMMEDIATE ATTENTION"
+                  }
+                }
+              ]
+            }

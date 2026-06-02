@@ -1,0 +1,58 @@
+services:
+  openmrs-db:
+    image: mysql:8.0
+    container_name: openmrs-db-test
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-testroot123}
+      MYSQL_DATABASE: ${DB_NAME:-openmrs_test}
+      MYSQL_USER: ${DB_USER:-openmrs}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-openmrs_test123}
+    ports:
+      - "3307:3306"
+    volumes:
+      - openmrs-db-data-test:/var/lib/mysql
+    networks:
+      - openmrs-network-test
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+
+  openmrs:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.test
+    container_name: openmrs-app-test
+    depends_on:
+      openmrs-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: openmrs-db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-openmrs_test}
+      DB_USER: ${DB_USER:-openmrs}
+      DB_PASSWORD: ${DB_PASSWORD:-openmrs_test123}
+      OPENMRS_ADMIN_USER: ${OPENMRS_ADMIN_USER:-admin}
+      OPENMRS_ADMIN_PASSWORD: ${OPENMRS_ADMIN_PASSWORD:-Test@123}
+      ENVIRONMENT: test
+      LOG_LEVEL: DEBUG
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./openmrs-module-appointmentscheduling:/opt/openmrs/modules/appointmentscheduling
+      - openmrs-data-test:/opt/openmrs/data
+      - ./tests:/opt/tests
+    networks:
+      - openmrs-network-test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/"]
+      timeout: 10s
+      retries: 10
+
+volumes:
+  openmrs-db-data-test:
+  openmrs-data-test:
+
+networks:
+  openmrs-network-test:
+    driver: bridge

@@ -1,0 +1,31 @@
+FROM openjdk:8-jdk-slim
+
+WORKDIR /opt/openmrs
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    maven \
+    git \
+    tomcat9 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download OpenMRS WAR (adjust version as needed)
+RUN wget -q https://sourceforge.net/projects/openmrs/files/releases/OpenMRS_2.3.1/openmrs.war && \
+    mv openmrs.war /opt/openmrs/
+
+# Create modules directory
+RUN mkdir -p /opt/openmrs/modules
+
+# Copy compiled module
+COPY ./openmrs-module-appointmentscheduling/omod/target/*.omod ./modules/ 2>/dev/null || true
+
+# Development: hot reload, debug mode
+ENV JAVA_OPTS="-Xmx512m -Xms256m -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=*:5005"
+
+EXPOSE 8080 5005
+
+# Start Tomcat
+RUN apt-get update && apt-get install -y tomcat9 && rm -rf /var/lib/apt/lists/*
+CMD ["/usr/share/tomcat9/bin/catalina.sh", "run"]

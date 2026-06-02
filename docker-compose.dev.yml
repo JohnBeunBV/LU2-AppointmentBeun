@@ -1,0 +1,56 @@
+services:
+  openmrs-db:
+    image: mysql:8.0
+    container_name: openmrs-db-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: openmrs
+      MYSQL_USER: openmrs
+      MYSQL_PASSWORD: openmrs123
+    ports:
+      - "3306:3306"
+    volumes:
+      - openmrs-db-data-dev:/var/lib/mysql
+    networks:
+      - openmrs-network-dev
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+
+  openmrs:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.dev
+    container_name: openmrs-app-dev
+    depends_on:
+      openmrs-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: openmrs-db
+      DB_PORT: 3306
+      DB_NAME: openmrs
+      DB_USER: openmrs
+      DB_PASSWORD: openmrs123
+      OPENMRS_ADMIN_USER: admin
+      OPENMRS_ADMIN_PASSWORD: Admin123
+      ENVIRONMENT: development
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./openmrs-module-appointmentscheduling:/opt/openmrs/modules/appointmentscheduling
+      - openmrs-data-dev:/opt/openmrs/data
+    networks:
+      - openmrs-network-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/"]
+      timeout: 5s
+      retries: 10
+
+volumes:
+  openmrs-db-data-dev:
+  openmrs-data-dev:
+
+networks:
+  openmrs-network-dev:
+    driver: bridge

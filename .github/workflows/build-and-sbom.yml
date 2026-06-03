@@ -14,9 +14,6 @@ jobs:
   build-and-sbom:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-
     defaults:
       run:
         working-directory: ./openmrs-module-appointmentscheduling
@@ -50,19 +47,6 @@ jobs:
         with:
           name: sbom-cyclonedx
           path: openmrs-module-appointmentscheduling/target/bom.json
-
-      - name: Export GitHub Dependency Graph SBOM (SPDX)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api /repos/${{ github.repository }}/dependency-graph/sbom \
-            --jq '.sbom' > ../sbom-github-spdx.json
-
-      - name: Upload GitHub SBOM artifact (SPDX)
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom-github-spdx
-          path: sbom-github-spdx.json
 
       - name: Upload test reports
         if: always()

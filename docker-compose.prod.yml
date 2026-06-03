@@ -24,9 +24,10 @@ services:
   openmrs:
     build:
       context: .
-      dockerfile: .docker/Dockerfile.prod
+      dockerfile: .docker/Dockerfile
       args:
         BUILD_ENV: production
+    user: openmrs
     container_name: openmrs-app-prod
     depends_on:
       openmrs-db:

@@ -21,7 +21,9 @@ services:
   openmrs:
     build:
       context: .
-      dockerfile: .docker/Dockerfile.test
+      dockerfile: .docker/Dockerfile
+      args:
+        BUILD_ENV: test
     container_name: openmrs-app-test
     depends_on:
       openmrs-db:

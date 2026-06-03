@@ -21,7 +21,9 @@ services:
   openmrs:
     build:
       context: .
-      dockerfile: .docker/Dockerfile.dev
+      dockerfile: .docker/Dockerfile
+      args:
+        BUILD_ENV: development
     container_name: openmrs-app-dev
     depends_on:
       openmrs-db:
@@ -37,6 +39,7 @@ services:
       ENVIRONMENT: development
     ports:
       - "8080:8080"
+      - "5005:5005"
     volumes:
       - ./openmrs-module-appointmentscheduling:/opt/openmrs/modules/appointmentscheduling
       - openmrs-data-dev:/opt/openmrs/data

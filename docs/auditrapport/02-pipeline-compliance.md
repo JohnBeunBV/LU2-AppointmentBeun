@@ -1,28 +1,63 @@
 # 02 — Pipeline Compliance
 
-> Kwaliteitseisen en bevindingen staan in [00-Security-&-Maintainability.md](00-Security-%26-Maintainability.md).
-> NEN-7510 gap-analyse staat in [01-gap-analyse.md](01-gap-analyse.md).
-
-## NEN-7510 Controls → Pipeline-maatregel → Bewijs
-
-| NEN-7510 Control | Omschrijving | Pipeline-maatregel | Bewijs |
-|---|---|---|---|
-| A.8.3 / 9.4.1 | Beperking van toegang tot informatie | `@Authorized`-annotaties worden meegeleverd in de broncode en gecontroleerd bij elke build | `AppointmentService.java` — privilege-eisen per methode |
-| A.8.5 / 9.4.3 | Beheer van wachtwoorden en credentials | Build faalt niet op hardcoded credentials — **bevinding S1 is open** | `AppointmentActivator.java` regels 79–82 — niet conform |
-| A.8.15 / 12.4.1 | Gebeurtenissen registreren (logging) | Build faalt niet op PII-logging — **bevinding S2 is open** | `AppointmentServiceImpl.java` regels 1426–1432 — niet conform |
-| 12.6.1 | Beheer van technische kwetsbaarheden | SBOM gegenereerd via CycloneDX Maven-plugin; alle dependencies zichtbaar met versie | `sbom-cyclonedx` artifact in workflow-run (`target/bom.json`) |
-| 14.2.1 | Beleid voor beveiligd ontwikkelen | Build en tests draaien automatisch bij elke PR via `mvn clean verify` | `build-and-sbom.yml` stap *Build project* |
-| 14.2.2 | Procedures voor wijzigingsbeheer | Wijzigingen gaan via een Pull Request naar `main`; workflow triggert op PR | GitHub branch `main` + PR-trigger in `build-and-sbom.yml` |
-| 15.2.1 | Beheer van dienstverlening door leveranciers | Alle externe Maven-dependencies traceerbaar via de SBOM | `sbom-cyclonedx` artifact — volledige dependency-lijst met versies en licenties |
+Dit document beschrijft de GitHub-maatregelen die zijn ingericht om de kwaliteit en veiligheid van wijzigingen te borgen. De nadruk ligt op branch protection, verplichte reviews en de geautomatiseerde build-pipeline.
 
 ---
 
-## Openstaande pipeline-gaps
+## Branch Protection Rules
 
-De huidige pipeline detecteert onderstaande bevindingen **niet automatisch**. Er is geen build-stap die hierop controleert:
+Op de repository zijn branch protection rules ingesteld voor drie branches: `main`, `develop` en `release/*`. Elke branch heeft 4 actieve regels.
 
-| Bevinding | Eis | Ontbrekende pipeline-controle |
+**Bewijs:**
+
+![Branch protection rules](../../images/Screenshot%202026-06-04%20101056.png)
+
+### Ingestelde regels (per branch)
+
+| Regel | Omschrijving | Van toepassing op |
 |---|---|---|
-| Hardcoded credentials in `AppointmentActivator.java` | S1 / NEN-7510 9.4.3 | Secret-scanner (bijv. `truffleHog` of `gitleaks`) |
-| PII-logging in `AppointmentServiceImpl.java` | S2 / NEN-7510 A.8.15 | Statische code-analyse (bijv. SpotBugs, SonarQube) |
-| Lege `@Authorized`-annotaties | S3 / NEN-7510 9.4.1 | Geen automatische check aanwezig |
+| Pull Request vereist | Direct pushen naar de branch is geblokkeerd — wijzigingen gaan altijd via een PR | `main`, `develop`, `release/*` |
+| Review vereist | Minimaal één goedkeuring van een reviewer is verplicht voordat een PR gemerged mag worden | `main`, `develop`, `release/*` |
+| Status checks vereist | De CI-pipeline (build + tests) moet slagen voordat mergen mogelijk is | `main`, `develop`, `release/*` |
+| Conversation resolution | Alle opmerkingen in een PR moeten opgelost zijn voor merge | `main`, `develop`, `release/*` |
+
+---
+
+## CI/CD Pipeline
+
+De workflow `build-and-sbom.yml` draait automatisch bij elke push naar `main` of `develop` en bij elke Pull Request naar deze branches.
+
+### Pipeline-stappen
+
+| Stap | Wat het doet | Compliance-doel |
+|---|---|---|
+| Checkout repository | Haalt de broncode op | Reproduceerbaarheid |
+| Set up Java 8 | Installeert de juiste Java-versie | Consistente build-omgeving |
+| Cache Maven packages | Hergebruikt dependencies | Snellere en stabielere builds |
+| Build project (`mvn clean verify`) | Compileert de code en draait alle tests | Detecteert fouten voor merge |
+| Generate CycloneDX SBOM | Maakt een overzicht van alle dependencies met versies | NEN-7510 12.6.1 — kwetsbaarheidsbeheer |
+| Upload SBOM artifact | Slaat de SBOM op als downloadbaar artifact | Traceerbaarheid van dependencies |
+| Upload test reports | Slaat testrapporten op, ook bij een gefaalde build | Audittrail van testresultaten |
+
+---
+
+## Koppeling aan NEN-7510
+
+| NEN-7510 Control | Pipeline-maatregel | Bewijs |
+|---|---|---|
+| 12.6.1 — Technische kwetsbaarheden | SBOM via CycloneDX Maven-plugin | `sbom-cyclonedx` artifact in workflow-run |
+| 14.2.1 — Beveiligd ontwikkelen | Build + tests draaien automatisch bij elke PR | `build-and-sbom.yml` — stap *Build project* |
+| 14.2.2 — Wijzigingsbeheer | Wijzigingen via PR met verplichte review | Branch protection rules (zie screenshot) |
+| 15.2.1 — Leveranciersbeheer | Alle externe dependencies traceerbaar via SBOM | `target/bom.json` in artifact |
+
+---
+
+## Openstaande gaps
+
+De pipeline detecteert onderstaande bevindingen momenteel **niet automatisch**:
+
+| Bevinding | Ontbrekende controle |
+|---|---|
+| Hardcoded credentials (`AppointmentActivator.java`) | Secret-scanner zoals `gitleaks` |
+| PII in logbestanden (`AppointmentServiceImpl.java`) | Statische analyse zoals SonarQube of SpotBugs |
+| Lege `@Authorized`-annotaties | Geen geautomatiseerde check aanwezig |

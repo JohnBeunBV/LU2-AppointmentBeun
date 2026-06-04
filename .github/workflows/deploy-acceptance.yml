@@ -1,0 +1,87 @@
+name: Deploy to Acceptance
+
+on:
+  push:
+    branches: ["release/*"]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: acceptance
+      url: ${{ vars.ACC_SERVER_HOST }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        run: echo "IMAGE_NAME=${IMAGE_NAME,,}" >> $GITHUB_ENV
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image (acceptance)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .docker/Dockerfile
+          push: true
+          build-args: BUILD_ENV=acceptance
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:acceptance-${{ github.sha }}
+
+      - name: Deploy to Acceptance Server
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ACC_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.ACC_SERVER_HOST }} >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key ${{ secrets.ACC_SERVER_USER }}@${{ secrets.ACC_SERVER_HOST }} << 'EOF'
+            cd /opt/openmrs/acceptance
+            docker-compose -f docker-compose.acceptance.yml pull
+            docker-compose -f docker-compose.acceptance.yml up -d
+            docker-compose -f docker-compose.acceptance.yml logs openmrs --tail=50
+          EOF
+
+          rm ~/.ssh/deploy_key
+
+      - name: Health Check
+        run: |
+          for i in {1..10}; do
+            if curl -f http://${{ secrets.ACC_SERVER_HOST }}:8082/openmrs/admin > /dev/null 2>&1; then
+              echo "Acceptance health check passed"
+              exit 0
+            fi
+            echo "Waiting... ($i/10)"
+            sleep 15
+          done
+          echo "Acceptance health check failed"
+          exit 1
+
+      - name: Slack notification
+        if: always()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "Acceptance deployment: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Acceptance Environment Deployment*\nStatus: *${{ job.status }}*\nBranch: `${{ github.ref_name }}`\nCommit: `${{ github.sha }}`"
+                  }
+                }
+              ]
+            }

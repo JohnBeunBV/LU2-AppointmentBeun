@@ -1428,6 +1428,6 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
                 + " dob=" + patient.getBirthdate()
                 + " identifier=" + (patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().getIdentifier() : "none")
                 + " gender=" + patient.getGender());
-        return getAppointmentsForPatient(patient);
+        return getAppointmentsOfPatient(patient);
     }
 }

@@ -1,0 +1,67 @@
+services:
+  openmrs-db:
+    image: mysql:8.0
+    container_name: openmrs-db-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    # NO PORT EXPOSED - internal only
+    volumes:
+      - openmrs-db-data-prod:/var/lib/mysql
+      - ./backups:/backups
+    networks:
+      - openmrs-network-prod
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  openmrs:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      args:
+        BUILD_ENV: production
+    user: openmrs
+    container_name: openmrs-app-prod
+    depends_on:
+      openmrs-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: openmrs-db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      OPENMRS_ADMIN_USER: ${OPENMRS_ADMIN_USER}
+      OPENMRS_ADMIN_PASSWORD: ${OPENMRS_ADMIN_PASSWORD}
+      ENVIRONMENT: production
+      LOG_LEVEL: ERROR
+      JAVA_OPTS: "-Xmx1024m -Xms512m -XX:+UseG1GC"
+    ports:
+      - "8080:8080"
+    volumes:
+      - openmrs-data-prod:/opt/openmrs/data
+      - ./logs:/opt/openmrs/logs
+    networks:
+      - openmrs-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/"]
+      timeout: 15s
+      retries: 5
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  openmrs-db-data-prod:
+  openmrs-data-prod:
+
+networks:
+  openmrs-network-prod:
+    driver: bridge

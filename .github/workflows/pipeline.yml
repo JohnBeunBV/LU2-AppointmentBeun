@@ -42,14 +42,14 @@ jobs:
       - name: Build and run tests
         run: mvn clean verify
 
-      # - name: SonarQube Analysis
-      #   run: |
-      #     mvn sonar:sonar \
-      #       -Dsonar.projectKey=${{ github.repository }} \
-      #       -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-      #       -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-      #       -Dsonar.qualitygate.wait=false
-      #   continue-on-error: true
+      - name: SonarQube Analysis
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ github.repository }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.qualitygate.wait=false
+        continue-on-error: true
 
       - name: Generate SBOM
         run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom

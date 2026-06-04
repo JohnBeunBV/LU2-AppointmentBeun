@@ -50,6 +50,9 @@ jobs:
         with:
           ref: main
 
+      - name: Lowercase image name
+        run: echo "IMAGE_NAME=${IMAGE_NAME,,}" >> $GITHUB_ENV
+
       - name: Create deployment
         uses: actions/github-script@v7
         with:

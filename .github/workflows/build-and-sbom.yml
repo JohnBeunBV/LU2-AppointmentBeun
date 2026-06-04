@@ -40,13 +40,13 @@ jobs:
         run: mvn clean verify
 
       - name: Generate CycloneDX SBOM
-        run: mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
+        run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
           name: sbom-cyclonedx
-          path: openmrs-module-appointmentscheduling/target/bom.json
+          path: openmrs-module-appointmentscheduling/target/bom.*
 
       - name: Upload test reports
         if: always()

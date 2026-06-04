@@ -14,17 +14,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget git \
 COPY ./openmrs-module-appointmentscheduling /build/appointmentscheduling
 RUN cd /build/appointmentscheduling && mvn clean package -DskipTests -q
 
-# Download OpenMRS WAR in builder so the runtime stage stays lean
-RUN mvn dependency:get \
-      -DremoteRepositories=https://mavenrepo.openmrs.org/public \
-      -Dartifact=org.openmrs.web:openmrs:2.3.1:war \
-      -Ddest=/build/openmrs.war
+# Download OpenMRS WAR directly from OpenMRS Nexus repo
+RUN wget -q "https://mavenrepo.openmrs.org/nexus/content/repositories/releases/org/openmrs/web/openmrs-webapp/1.9.9/openmrs-webapp-1.9.9.war" \
+      -O /build/openmrs.war
 
 # ───────────────────────────────────────────────────────────────
-FROM eclipse-temurin:8-jre-jammy AS runtime
+# OpenMRS 1.9.9 validates java.version and only accepts 1.6.x or 1.7.x
+FROM azul/zulu-openjdk-debian:7 AS runtime
 
 ARG BUILD_ENV=development
-ARG TOMCAT_VERSION=9.0.89
+ARG TOMCAT_VERSION=8.0.53
 
 ENV BUILD_ENV=${BUILD_ENV} \
     CATALINA_HOME=/opt/tomcat \
@@ -35,8 +34,8 @@ WORKDIR /opt/openmrs
 RUN apt-get update && apt-get install -y --no-install-recommends curl wget ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Tomcat 9 from Apache archive (no apt to avoid Java version conflicts)
-RUN wget -q "https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz" \
+# Install Tomcat 8.0.x (last Java-7-compatible release) from Apache archive
+RUN wget -q "https://archive.apache.org/dist/tomcat/tomcat-8/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz" \
     && tar -xzf apache-tomcat-${TOMCAT_VERSION}.tar.gz -C /opt \
     && mv /opt/apache-tomcat-${TOMCAT_VERSION} /opt/tomcat \
     && rm apache-tomcat-${TOMCAT_VERSION}.tar.gz \
@@ -56,7 +55,7 @@ RUN if [ "$BUILD_ENV" = "production" ]; then \
         printf 'export JAVA_OPTS="-Xmx2048m -Xms1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Djava.security.egd=file:/dev/./urandom"\n' \
           > /opt/tomcat/bin/setenv.sh; \
     elif [ "$BUILD_ENV" = "development" ]; then \
-        printf 'export JAVA_OPTS="-Xmx512m -Xms256m -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=*:5005 -Djava.security.egd=file:/dev/./urandom"\n' \
+        printf 'export JAVA_OPTS="-Xmx512m -Xms256m -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005 -Djava.security.egd=file:/dev/./urandom"\n' \
           > /opt/tomcat/bin/setenv.sh; \
     else \
         printf 'export JAVA_OPTS="-Xmx1024m -Xms512m -Djava.security.egd=file:/dev/./urandom"\n' \

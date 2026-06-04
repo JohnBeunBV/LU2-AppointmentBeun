@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: test
-      url: http://${{ secrets.TEST_SERVER_HOST }}:8081
+      url: ${{ vars.TEST_SERVER_HOST }}
 
     steps:
       - uses: actions/checkout@v3

@@ -32,7 +32,7 @@
 
 **Aanwezig:**
 
-- ✅ Context.isAuthenticated() checks in [AppointmentBlockCalendarController.java](openmrs-module-appointmentscheduling/omod/src/main/java/org/openmrs/module/appointmentscheduling/web/controller/AppointmentBlockCalendarController.java#L51)
+- ✅ Context.isAuthenticated() checks in [AppointmentBlockCalendarController.java](../../openmrs-module-appointmentscheduling/omod/src/main/java/org/openmrs/module/appointmentscheduling/web/controller/AppointmentBlockCalendarController.java#L51)
 - ✅ User identification methods
 - ✅ Session management
 

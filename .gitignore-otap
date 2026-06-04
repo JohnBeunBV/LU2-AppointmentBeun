@@ -1,0 +1,49 @@
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+.env.prod
+
+# SSH keys
+ssh_key
+ssh_key.pub
+github_deploy_key
+github_deploy_key.pub
+~/.ssh
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+target/
+build/
+*.class
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules/
+.maven
+
+# Local backup/restore
+backups/
+*.sql
+
+# Docker volumes (local development)
+openmrs-db-data-dev/
+openmrs-data-dev/
+openmrs-db-data-test/
+openmrs-data-test/

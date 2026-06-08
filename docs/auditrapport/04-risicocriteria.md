@@ -1,9 +1,10 @@
-# Risicocriteria — OpenMRS Appointment Scheduler
+# 04 Risicocriteria — OpenMRS Appointment Scheduler
 
 **Sprint:** 2  
 **Taak:** SOF-35: Risicocriteria definiëren  
 **Module:** OpenMRS Appointment Scheduler  
 **Versie:** 1
+**Norm:** NEN-7510:2024
 
 ---
 

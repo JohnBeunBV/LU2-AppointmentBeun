@@ -11,10 +11,10 @@
 
 Dit document legt de criteria vast waarmee risico's in het project worden beoordeeld. De scoreschaal, risicobereidheid en grenswaarden die hier gedefinieerd worden, zijn de gemeenschappelijke basis voor:
 
-- `04-risicomatrix.md` — applicatierisico's
-- `05-bowtie.md` — diepteanalyse hoogste risico
+- `05-risicomatrix.md` — applicatierisico's
+- `06-bowtie.md` — diepteanalyse hoogste risico
 - De risicomatrix voor het CI/CD-proces (SOF-36)
-- `06-security-backlog.md` — prioritering van bevindingen
+- `09-security-backlog.md` — prioritering van bevindingen
 
 ---
 

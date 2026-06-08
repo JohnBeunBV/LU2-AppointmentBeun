@@ -45,10 +45,10 @@ De workflow `build-and-sbom.yml` draait automatisch bij elke push naar `main` of
 
 | NEN-7510 Control | Pipeline-maatregel | Bewijs |
 |---|---|---|
-| 12.6.1 — Technische kwetsbaarheden | SBOM via CycloneDX Maven-plugin | `sbom-cyclonedx` artifact in workflow-run |
-| 14.2.1 — Beveiligd ontwikkelen | Build + tests draaien automatisch bij elke PR | `build-and-sbom.yml` — stap *Build project* |
+| 12.6.1 — Technische kwetsbaarheden | SBOM-generatie via CI is nog niet ingericht | Nog niet ingericht (workflow ontbreekt) |
+| 14.2.1 — Beveiligd ontwikkelen | Build + tests via CI is nog niet ingericht | Nog niet ingericht (workflow ontbreekt) |
 | 14.2.2 — Wijzigingsbeheer | Wijzigingen via PR met verplichte review | Branch protection rules (zie screenshot) |
-| 15.2.1 — Leveranciersbeheer | Alle externe dependencies traceerbaar via SBOM | `target/bom.json` in artifact |
+| 15.2.1 — Leveranciersbeheer | Dependency-overzicht via SBOM is nog niet ingericht | Nog niet ingericht (workflow ontbreekt) |
 
 ---
 

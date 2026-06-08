@@ -25,7 +25,7 @@ Op de repository zijn branch protection rules ingesteld voor drie branches: `mai
 
 ## CI/CD Pipeline
 
-De workflow `build-and-sbom.yml` draait automatisch bij elke push naar `main` of `develop` en bij elke Pull Request naar deze branches.
+In deze repository is momenteel geen GitHub Actions workflow (bijv. `build-and-sbom.yml`) aanwezig om build/tests/SBOM automatisch af te dwingen.
 
 ### Pipeline-stappen
 

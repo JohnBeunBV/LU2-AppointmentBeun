@@ -1,7 +1,7 @@
 # Asset-identificatie — OpenMRS Appointment Scheduler
 
 **Sprint:** 2  
-**Taak:** Asset-identificatie
+**Taak:** SOF-26: Asset-identificatie
 **Module:** OpenMRS Appointment Scheduler  
 **Versie:** 1
 

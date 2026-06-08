@@ -17,8 +17,32 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SAST: Secret scanning — loopt als eerste, blokkeert bij fund van secrets
+  # Mitigeert: CICD-04 (geen geheimscanner)
+  # ─────────────────────────────────────────────────────────────────────────────
+  secret-scan:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # False positives: voeg toe aan .gitleaks.toml in de repository-root.
+        # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+
   build-and-test:
     name: Build, Test & SBOM
+    needs: secret-scan
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -42,14 +66,42 @@ jobs:
       - name: Build and run tests
         run: mvn clean verify
 
-      - name: SonarQube Analysis
+      # ── SAST: SonarQube ─────────────────────────────────────────────────────
+      # Mitigeert: CICD-03 (continue-on-error verwijderd op release/* en main)
+      # Op develop: waarschuwing (continue-on-error: true); op release/* en main: hard blokkeren.
+      - name: SonarQube Analysis (develop — waarschuwing)
+        if: github.ref == 'refs/heads/develop'
         run: |
           mvn sonar:sonar \
             -Dsonar.projectKey=${{ github.repository }} \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.qualitygate.wait=false
+            -Dsonar.qualitygate.wait=true
         continue-on-error: true
+
+      - name: SonarQube Analysis (release & main — hard gate)
+        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ github.repository }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.qualitygate.wait=true
+        # Geen continue-on-error: quality gate failure blokkeert de build
+
+      # ── SCA: Dependency vulnerability scan (OWASP) ──────────────────────────
+      # Mitigeert: CICD-05 (geen SCA-scan op dependencies)
+      # False positives: voeg toe aan owasp/suppressions.xml
+      # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+      - name: OWASP Dependency Check (SCA)
+        run: |
+          mvn org.owasp:dependency-check-maven:9.0.9:check \
+            -DfailBuildOnCVSS=7 \
+            -DsuppressionFile=../owasp/suppressions.xml \
+            -Dformats=HTML,JSON \
+            -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+        continue-on-error: ${{ github.ref == 'refs/heads/develop' }}
+        # Op develop: waarschuwing. Op release/* en main: hard blokkeren bij CVSS ≥ 7.
 
       - name: Generate SBOM
         run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
@@ -67,6 +119,13 @@ jobs:
           name: sbom-cyclonedx
           path: openmrs-module-appointmentscheduling/target/bom.*
 
+      - name: Upload OWASP Dependency Check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: openmrs-module-appointmentscheduling/target/dependency-check-report.*
+
   docker-build:
     name: Build & Push Docker Image
     needs: build-and-test
@@ -75,6 +134,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write   # nodig voor Trivy SARIF upload
 
     steps:
       - uses: actions/checkout@v4
@@ -123,6 +183,30 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ github.run_number }}
 
+      # ── Container image vulnerability scan (Trivy) ──────────────────────────
+      # Mitigeert: CICD-05 (geen CVE-scan op container image)
+      # Scant de zojuist gebouwde image op bekende CVE's.
+      # False positives: voeg CVE-ID toe aan .trivyignore in de repository-root.
+      # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+      - name: Trivy — scan container image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: sarif
+          output: trivy-image-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: ${{ (startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
+          # Op develop: kans 0 (waarschuwing). Op release/* en main: exit-code 1 (blokkeert).
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image-results.sarif
+          category: trivy-container
+
   deploy-test:
     name: Deploy to Test
     needs: docker-build
@@ -135,21 +219,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Test Server
+      # Mitigeert CICD-07: SSH key geladen in ssh-agent (geheugen), nooit naar schijf geschreven.
+      # Mitigeert CICD-10: host key opgeslagen als secret (TOFU vermeden).
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TEST_SSH_KEY }}
+
+      - name: Add known host key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.TEST_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.TEST_SERVER_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.TEST_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/deploy_key ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'EOF'
+      - name: Deploy to Test Server
+        run: |
+          ssh ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'EOF'
             cd /opt/openmrs/test
             docker-compose -f docker-compose.test.yml pull
             docker-compose -f docker-compose.test.yml up -d
             docker-compose -f docker-compose.test.yml logs openmrs --tail=50
           EOF
-
-          rm ~/.ssh/deploy_key
 
       - name: Health Check
         run: |
@@ -195,21 +285,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Acceptance Server
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.ACC_SSH_KEY }}
+
+      - name: Add known host key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.ACC_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.ACC_SERVER_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.ACC_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/deploy_key ${{ secrets.ACC_SERVER_USER }}@${{ secrets.ACC_SERVER_HOST }} << 'EOF'
+      - name: Deploy to Acceptance Server
+        run: |
+          ssh ${{ secrets.ACC_SERVER_USER }}@${{ secrets.ACC_SERVER_HOST }} << 'EOF'
             cd /opt/openmrs/acceptance
             docker-compose -f docker-compose.acceptance.yml pull
             docker-compose -f docker-compose.acceptance.yml up -d
             docker-compose -f docker-compose.acceptance.yml logs openmrs --tail=50
           EOF
-
-          rm ~/.ssh/deploy_key
 
       - name: Health Check
         run: |
@@ -264,14 +358,20 @@ jobs:
           fi
           echo "Valid version: $VERSION"
 
-      - name: Database Backup
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: Add known host key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.PROD_SERVER_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.PROD_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/deploy_key ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
+      - name: Database Backup
+        run: |
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
             BACKUP_DIR="/backups/$(date +%Y%m%d_%H%M%S)"
             mkdir -p $BACKUP_DIR
             docker-compose -f /opt/openmrs/prod/docker-compose.prod.yml exec -T openmrs-db \
@@ -279,27 +379,25 @@ jobs:
             echo "Backup created: $BACKUP_DIR"
           EOF
 
-          rm ~/.ssh/deploy_key
+      # Mitigeert CICD-08: vorige image-tag opgeslagen voor automatische rollback.
+      - name: Sla vorige image-tag op
+        run: |
+          PREV_TAG=$(ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} \
+            "docker inspect --format='{{.Config.Image}}' \$(docker-compose -f /opt/openmrs/prod/docker-compose.prod.yml ps -q openmrs) 2>/dev/null || echo 'none'")
+          echo "PREVIOUS_IMAGE=$PREV_TAG" >> $GITHUB_ENV
 
       - name: Deploy to Production
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.PROD_SERVER_HOST }} >> ~/.ssh/known_hosts
-
-          ssh -i ~/.ssh/deploy_key ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
             cd /opt/openmrs/prod
-            docker-compose -f docker-compose.prod.yml down
             docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
             sleep 60
             docker-compose -f docker-compose.prod.yml ps
           EOF
 
-          rm ~/.ssh/deploy_key
-
       - name: Health Check
+        id: health-check
         run: |
           for i in {1..10}; do
             if curl -f https://${{ secrets.PROD_SERVER_HOST }}/openmrs/admin > /dev/null 2>&1; then
@@ -311,6 +409,19 @@ jobs:
           done
           echo "Production health check failed"
           exit 1
+
+      # Mitigeert CICD-08: automatische rollback naar vorige image bij health check failure.
+      - name: Rollback naar vorige image
+        if: failure() && steps.health-check.outcome == 'failure' && env.PREVIOUS_IMAGE != 'none'
+        run: |
+          echo "Health check mislukt — rollback naar: $PREVIOUS_IMAGE"
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << EOF
+            cd /opt/openmrs/prod
+            docker-compose -f docker-compose.prod.yml down
+            docker pull $PREVIOUS_IMAGE
+            OPENMRS_IMAGE=$PREVIOUS_IMAGE docker-compose -f docker-compose.prod.yml up -d
+            echo "Rollback voltooid naar: $PREVIOUS_IMAGE"
+          EOF
 
       - name: Slack Success Notification
         if: success()

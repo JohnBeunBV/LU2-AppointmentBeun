@@ -1,0 +1,11 @@
+# Trivy ignore-bestand — OpenMRS Appointment Scheduler
+# Beheerd door: Ontwikkelteam
+# Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+#
+# Formaat:
+#   CVE-XXXX-XXXXX  # Reden | Reviewer | Datum | Herbeoordelen op: YYYY-MM-DD
+#
+# BELANGRIJK: Voeg GEEN CVE's toe zonder schriftelijke onderbouwing.
+# CRITICAL/HIGH CVE's vereisen goedkeuring van twee teamleden.
+#
+# Nog geen gedocumenteerde false positives.

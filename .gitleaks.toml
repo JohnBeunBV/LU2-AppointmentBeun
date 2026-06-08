@@ -1,0 +1,30 @@
+# Gitleaks configuratie — OpenMRS Appointment Scheduler
+# Beheerd door: Ontwikkelteam
+# Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+#
+# BELANGRIJK: Voeg GEEN suppressions toe zonder schriftelijke onderbouwing.
+# CRITICAL/HIGH suppressions vereisen goedkeuring van twee teamleden.
+
+[extend]
+# Gebruik de standaard gitleaks-regelset als basis
+useDefault = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Allowlist — False positives
+# ─────────────────────────────────────────────────────────────────────────────
+# Voeg hier gedocumenteerde false positives toe met verplichte velden:
+#   description : Waarom is dit een false positive?
+#   regexTarget : "match" (de gevonden waarde) of "line" (de hele regel)
+#   regex       : Patroon dat de false positive identificeert
+#   reviewer    : Naam van beoordelaar
+#   date        : Datum van beoordeling (YYYY-MM-DD)
+#
+# Voorbeeld:
+# [[allowlist]]
+#   description = "Test-wachtwoord in unit test — geen echte credential"
+#   regexTarget = "line"
+#   regex       = '''password\s*=\s*"test123"'''
+#   reviewer    = "J. de Vries"
+#   date        = "2026-06-01"
+
+# Nog geen gedocumenteerde false positives.

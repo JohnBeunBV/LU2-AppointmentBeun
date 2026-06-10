@@ -1,6 +1,12 @@
-# Gap-Analyse: OpenMRS Appointment Scheduling Module vs NEN-7510:2024-2
+# 01 Gap-Analyse: OpenMRS Appointment Scheduling Module vs NEN-7510:2024-2 - OpenMRS Appointment Scheduler
 
-**Datum**: Juni 2, 2026 | **Totaalscore: 51% compliant**
+**Sprint:** 1
+**Taak:** SOF-22: GAP-Analyse
+**Module:** OpenMRS Appointment Scheduler  
+**Versie:** 2
+**Norm:** NEN-7510:2024
+
+**Totaalscore: 51% compliant**
 
 ## Samenvatting per Control
 

@@ -1,16 +1,22 @@
-# 05 — Risicomatrix: OpenMRS Appointment Scheduling Module
+# 05 Risicomatrix - OpenMRS Appointment Scheduler
 
-**Sprint:** 2 | **Taak:** SOF-27: Risicomatrix | **Datum:** Juni 2026 | **Norm:** NEN-7510:2024
+**Sprint:** 2  
+**Taak:** SOF-27: Risicomatrix
+**Module:** OpenMRS Appointment Scheduler  
+**Versie:** 1
+**Norm:** NEN-7510:2024
+
+---
 
 ---
 
 ## Kleurcodering
 
-| Kleur | Score | Beoordeling | Actie |
-|-------|-------|-------------|-------|
-| 🔴 Rood | ≥ 15 | Onacceptabel risico | Onmiddellijk aanpakken |
-| 🟠 Oranje | 8 – 14 | Verhoogd risico | Mitigatieplan met deadline opstellen |
-| 🟢 Groen | ≤ 7 | Acceptabel | Monitoren en periodiek herbeoordelen |
+| Kleur     | Score  | Beoordeling         | Actie                                |
+| --------- | ------ | ------------------- | ------------------------------------ |
+| 🔴 Rood   | ≥ 15   | Onacceptabel risico | Onmiddellijk aanpakken               |
+| 🟠 Oranje | 8 – 14 | Verhoogd risico     | Mitigatieplan met deadline opstellen |
+| 🟢 Groen  | ≤ 7    | Acceptabel          | Monitoren en periodiek herbeoordelen |
 
 **Risicoscore = Kans × Impact** (schaal 1–5)
 
@@ -77,20 +83,20 @@
 
 ## Risicoregister
 
-| ID  | Risico                                                        | Getroffen asset(s)    | Kans | Impact | Score  | Klasse    | NEN-7510 control |
-| --- | ------------------------------------------------------------- | --------------------- | :--: | :----: | :----: | --------- | ---------------- |
-| R01 | PII-logging: patiëntdata in logbestanden                      | DA-01, DA-04, SC-06   | 5    | 5      | **25** | 🔴 Rood   | A.8.15           |
-| R02 | Hardcoded credentials in broncode                             | DA-06, SC-03          | 4    | 5      | **20** | 🔴 Rood   | A.9.2            |
-| R03 | Geen data-level ACL (patiënt ziet andermans afspraken)        | DA-01, DA-02, SC-01   | 4    | 4      | **16** | 🔴 Rood   | A.8.3            |
-| R04 | Typfouten in privilege-constanten (privilege-checks falen)    | SC-02, DA-03          | 5    | 3      | **15** | 🔴 Rood   | A.8.3            |
-| R05 | Lege `@Authorized()` op servicemethoden                       | SC-01, SC-02, DA-02   | 3    | 4      | **12** | 🟠 Oranje | A.8.3            |
-| R06 | Geen multi-factor authenticatie                               | DA-05, SC-02, PA-02   | 3    | 4      | **12** | 🟠 Oranje | A.8.5            |
-| R07 | Geen audit logging voor afspraakmutaties                      | DA-04, PA-04          | 4    | 3      | **12** | 🟠 Oranje | A.8.15           |
-| R08 | Geen brute-force beveiliging op inlogpagina                   | DA-05, PA-02          | 3    | 4      | **12** | 🟠 Oranje | A.8.5            |
-| R09 | ConcurrentModificationException in `cleanOpenAppointments`    | DA-02, PA-01          | 3    | 3      | **9**  | 🟠 Oranje | A.8.6            |
-| R10 | Gebruik van deprecated Date-API                               | DA-02, SC-03          | 2    | 3      | **6**  | 🟢 Groen  | A.8.8            |
-| R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet     | DA-02, PA-01          | 4    | 3      | **12** | 🟠 Oranje | A.8.6            |
-| R12 | Ongebruikte variabele `satisfyingConstraints`                 | SC-04                 | 2    | 1      | **2**  | 🟢 Groen  | —                |
+| ID  | Risico                                                     | Getroffen asset(s)  | Kans | Impact | Score  | Klasse    | NEN-7510 control |
+| --- | ---------------------------------------------------------- | ------------------- | :--: | :----: | :----: | --------- | ---------------- |
+| R01 | PII-logging: patiëntdata in logbestanden                   | DA-01, DA-04, SC-06 |  5   |   5    | **25** | 🔴 Rood   | A.8.15           |
+| R02 | Hardcoded credentials in broncode                          | DA-06, SC-03        |  4   |   5    | **20** | 🔴 Rood   | A.9.2            |
+| R03 | Geen data-level ACL (patiënt ziet andermans afspraken)     | DA-01, DA-02, SC-01 |  4   |   4    | **16** | 🔴 Rood   | A.8.3            |
+| R04 | Typfouten in privilege-constanten (privilege-checks falen) | SC-02, DA-03        |  5   |   3    | **15** | 🔴 Rood   | A.8.3            |
+| R05 | Lege `@Authorized()` op servicemethoden                    | SC-01, SC-02, DA-02 |  3   |   4    | **12** | 🟠 Oranje | A.8.3            |
+| R06 | Geen multi-factor authenticatie                            | DA-05, SC-02, PA-02 |  3   |   4    | **12** | 🟠 Oranje | A.8.5            |
+| R07 | Geen audit logging voor afspraakmutaties                   | DA-04, PA-04        |  4   |   3    | **12** | 🟠 Oranje | A.8.15           |
+| R08 | Geen brute-force beveiliging op inlogpagina                | DA-05, PA-02        |  3   |   4    | **12** | 🟠 Oranje | A.8.5            |
+| R09 | ConcurrentModificationException in `cleanOpenAppointments` | DA-02, PA-01        |  3   |   3    | **9**  | 🟠 Oranje | A.8.6            |
+| R10 | Gebruik van deprecated Date-API                            | DA-02, SC-03        |  2   |   3    | **6**  | 🟢 Groen  | A.8.8            |
+| R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet  | DA-02, PA-01        |  4   |   3    | **12** | 🟠 Oranje | A.8.6            |
+| R12 | Ongebruikte variabele `satisfyingConstraints`              | SC-04               |  2   |   1    | **2**  | 🟢 Groen  | —                |
 
 ---
 
@@ -100,7 +106,7 @@
 
 **Getroffen assets:** DA-01 (patiëntgegevens), DA-04 (audit logs), SC-06 (loggingmechanisme)
 
-**Wat kan er misgaan:** `AppointmentServiceImpl.java` (regel 1426–1432) schrijft naam, geboortedatum, BSN en geslacht van patiënten als platte tekst naar de applicatielog. Logbestanden worden doorgaans minder streng beveiligd dan patiëntdossiers en zijn toegankelijk voor beheerders en DevOps-medewerkers die geen medische noodzaak hebben.
+**Wat kan er misgaan:** `AppointmentServiceImpl.java` (regel 1426–1432) schrijft naam, geboortedatum, BSN en geslacht van patiënten als plaintext naar de applicatielog. Logbestanden worden doorgaans minder streng beveiligd dan patiëntdossiers en zijn toegankelijk voor beheerders en DevOps-medewerkers die geen medische noodzaak hebben.
 
 **Gevolgen:** Overtreding van AVG artikel 9 (bijzondere categorieën persoonsgegevens), meldplicht bij de Autoriteit Persoonsgegevens, boetes tot € 20 miljoen of 4 % van de jaaromzet, reputatieschade.
 
@@ -226,17 +232,17 @@
 
 ## Samenvatting prioriteiten
 
-| Prioriteit | ID | Risico | Score |
-|------------|----|--------|-------|
-| 🔴 Onmiddellijk aanpakken | R01 | PII-logging | 25 |
-| 🔴 Onmiddellijk aanpakken | R02 | Hardcoded credentials | 20 |
-| 🔴 Onmiddellijk aanpakken | R03 | Geen data-level ACL | 16 |
-| 🔴 Onmiddellijk aanpakken | R04 | Typfouten privilege-constanten | 15 |
-| 🟠 Mitigatieplan opstellen | R05 | Lege @Authorized annotaties | 12 |
-| 🟠 Mitigatieplan opstellen | R06 | Geen MFA | 12 |
-| 🟠 Mitigatieplan opstellen | R07 | Geen audit logging | 12 |
-| 🟠 Mitigatieplan opstellen | R08 | Geen brute-force beveiliging | 12 |
-| 🟠 Mitigatieplan opstellen | R11 | Void/retire-vlaggen niet gezet | 12 |
-| 🟠 Mitigatieplan opstellen | R09 | ConcurrentModificationException | 9 |
-| 🟢 Monitoren | R10 | Deprecated Date-API | 6 |
-| 🟢 Monitoren | R12 | Ongebruikte variabele | 2 |
+| Prioriteit                 | ID  | Risico                          | Score |
+| -------------------------- | --- | ------------------------------- | ----- |
+| 🔴 Onmiddellijk aanpakken  | R01 | PII-logging                     | 25    |
+| 🔴 Onmiddellijk aanpakken  | R02 | Hardcoded credentials           | 20    |
+| 🔴 Onmiddellijk aanpakken  | R03 | Geen data-level ACL             | 16    |
+| 🔴 Onmiddellijk aanpakken  | R04 | Typfouten privilege-constanten  | 15    |
+| 🟠 Mitigatieplan opstellen | R05 | Lege @Authorized annotaties     | 12    |
+| 🟠 Mitigatieplan opstellen | R06 | Geen MFA                        | 12    |
+| 🟠 Mitigatieplan opstellen | R07 | Geen audit logging              | 12    |
+| 🟠 Mitigatieplan opstellen | R08 | Geen brute-force beveiliging    | 12    |
+| 🟠 Mitigatieplan opstellen | R11 | Void/retire-vlaggen niet gezet  | 12    |
+| 🟠 Mitigatieplan opstellen | R09 | ConcurrentModificationException | 9     |
+| 🟢 Monitoren               | R10 | Deprecated Date-API             | 6     |
+| 🟢 Monitoren               | R12 | Ongebruikte variabele           | 2     |

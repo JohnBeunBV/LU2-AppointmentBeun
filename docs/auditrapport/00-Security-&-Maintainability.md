@@ -1,4 +1,10 @@
-# 00 - Security & Maintainability
+# 00 - Security & Maintainability - OpenMRS Appointment Scheduler
+
+**Sprint:** 1
+**Taak:** SOF-22: GAP-Analyse
+**Module:** OpenMRS Appointment Scheduler  
+**Versie:** 2
+**Norm:** NEN-7510:2024
 
 ## Kwaliteitseisen
 

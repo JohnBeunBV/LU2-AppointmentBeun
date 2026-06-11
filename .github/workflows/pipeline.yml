@@ -96,7 +96,7 @@ jobs:
       # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
       - name: OWASP Dependency Check (SCA)
         run: |
-          mvn org.owasp:dependency-check-maven:12.2.2:check \
+          mvn org.owasp:dependency-check-maven:10.0.4:check \
             -DfailBuildOnCVSS=7 \
             -DsuppressionFile=../owasp/suppressions.xml \
             -Dformats=HTML,JSON \

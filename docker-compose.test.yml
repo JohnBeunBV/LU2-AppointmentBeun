@@ -1,6 +1,6 @@
 services:
   openmrs-db:
-    image: mysql:8.0
+    image: mysql:5.6
     container_name: openmrs-db-test
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-testroot123}
@@ -14,8 +14,9 @@ services:
     networks:
       - openmrs-network-test
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-testroot123}"]
+      interval: 10s
+      timeout: 5s
       retries: 10
 
   openmrs:
@@ -48,6 +49,7 @@ services:
       - openmrs-network-test
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/openmrs/"]
+      interval: 30s
       timeout: 10s
       retries: 10
 

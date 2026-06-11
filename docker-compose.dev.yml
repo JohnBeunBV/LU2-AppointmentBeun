@@ -1,12 +1,12 @@
 services:
   openmrs-db:
-    image: mysql:8.0
+    image: mysql:5.6
     container_name: openmrs-db-dev
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: openmrs
-      MYSQL_USER: openmrs
-      MYSQL_PASSWORD: openmrs123
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-devroot123}
+      MYSQL_DATABASE: ${DB_NAME:-openmrs_dev}
+      MYSQL_USER: ${DB_USER:-openmrs}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-openmrs_dev123}
     ports:
       - "3306:3306"
     volumes:
@@ -14,7 +14,8 @@ services:
     networks:
       - openmrs-network-dev
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-devroot123}"]
+      interval: 10s
       timeout: 5s
       retries: 10
 
@@ -31,12 +32,13 @@ services:
     environment:
       DB_HOST: openmrs-db
       DB_PORT: 3306
-      DB_NAME: openmrs
-      DB_USER: openmrs
-      DB_PASSWORD: openmrs123
-      OPENMRS_ADMIN_USER: admin
-      OPENMRS_ADMIN_PASSWORD: Admin123
+      DB_NAME: ${DB_NAME:-openmrs_dev}
+      DB_USER: ${DB_USER:-openmrs}
+      DB_PASSWORD: ${DB_PASSWORD:-openmrs_dev123}
+      OPENMRS_ADMIN_USER: ${OPENMRS_ADMIN_USER:-admin}
+      OPENMRS_ADMIN_PASSWORD: ${OPENMRS_ADMIN_USER:-Admin123}
       ENVIRONMENT: development
+      OPENMRS_APPLICATION_DATA_DIRECTORY: /opt/openmrs/data
     ports:
       - "8080:8080"
       - "5005:5005"

@@ -17,11 +17,37 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-test:
-    name: Build, Test & SBOM
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SAST: Secret scanning — loopt als eerste, blokkeert bij fund van secrets
+  # Mitigeert: CICD-04 (geen geheimscanner)
+  # ─────────────────────────────────────────────────────────────────────────────
+  secret-scan:
+    name: Secret Scan (Gitleaks)
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        # False positives: voeg toe aan .gitleaks.toml in de repository-root.
+        # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+
+  build-and-test:
+    name: Build, Test & SBOM
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write          # nodig voor git commit van SBOM
+      security-events: write   # nodig voor upload-sarif naar GitHub Security tab
 
     defaults:
       run:
@@ -31,6 +57,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0        # volledige history, niet shallow
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up JDK 8
         uses: actions/setup-java@v4
@@ -42,18 +70,105 @@ jobs:
       - name: Build and run tests
         run: mvn clean verify
 
-      - name: SonarQube Analysis
+      # ── SAST: SonarQube ─────────────────────────────────────────────────────
+      # Mitigeert: CICD-03 | NEN-7510: 8.29
+      - name: SonarQube Analysis (develop — waarschuwing)
+        if: github.ref == 'refs/heads/develop'
         run: |
           mvn sonar:sonar \
             -Dsonar.projectKey=${{ github.repository }} \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.qualitygate.wait=false
+            -Dsonar.qualitygate.wait=true
         continue-on-error: true
 
-      - name: Generate SBOM
-        run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
+      - name: SonarQube Analysis (release & main — hard gate)
+        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ github.repository }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.qualitygate.wait=true
 
+      # ── SCA: Snyk dependency vulnerability scan ──────────────────────────────
+      # Mitigeert: CICD-05 | NEN-7510: 8.8 (kwetsbaarheidsbeheer dependencies)
+      # Drempel: high = CVSS ≥ 7, equivalent aan de oude -DfailBuildOnCVSS=7.
+      # False positives: voeg toe aan .snyk met vervaldatum en onderbouwing.
+      # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+      - name: Snyk SCA Scan (develop — waarschuwing)
+        if: github.ref == 'refs/heads/develop'
+        uses: snyk/actions/maven-3-jdk-11@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --severity-threshold=high
+            --sarif-file-output=snyk.sarif
+            --all-projects
+            --json-file-output=snyk-sca.json
+
+      - name: Snyk SCA Scan (release & main — hard gate)
+        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        uses: snyk/actions/maven-3-jdk-11@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --severity-threshold=high
+            --sarif-file-output=snyk.sarif
+            --all-projects
+            --json-file-output=snyk-sca.json
+
+      - name: Upload Snyk SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: openmrs-module-appointmentscheduling/snyk.sarif
+        continue-on-error: true
+
+      # ── SBOM generatie + versioned opslag ────────────────────────────────────
+      # NEN-7510: 8.8 (inventarisatie componenten) + 8.9 (configuratiebeheer)
+      # CRA vereist: machineleesbaar, up-to-date per release, bewaard met datum.
+      # Bewijs voor auditor: SBOM gecommit in repo met datum + versie in bestandsnaam.
+      - name: Generate SBOM (CycloneDX)
+        run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.8.0:makeAggregateBom
+
+      - name: Determine version and date
+        id: meta
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          DATE=$(date -u '+%Y%m%d')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+
+      - name: Store versioned SBOM in repository
+        run: |
+          mkdir -p ../sbom
+          cp target/bom.json ../sbom/sbom-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}.json
+          cp target/bom.xml  ../sbom/sbom-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}.xml
+        # Bewaard als: sbom/sbom-1.0.0-SNAPSHOT-20260611.json
+        # Formaat: CycloneDX (NEN-7510 8.8 + CRA machineleesbaar vereiste)
+
+      - name: Commit versioned SBOM to repository
+        if: github.event_name != 'pull_request'   # sla over bij PR runs
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          git fetch origin ${{ github.ref_name }}
+          git checkout ${{ github.ref_name }}
+
+          git add ../sbom/
+          git diff --cached --quiet || git commit -m \
+            "chore: SBOM bijgewerkt voor v${{ steps.meta.outputs.version }} - ${{ steps.meta.outputs.date }} [skip ci]"
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin ${{ github.ref_name }}
+        working-directory: ./openmrs-module-appointmentscheduling
+
+      # ── Artefacten uploaden (audit trail voor deze run) ──────────────────────
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -61,11 +176,22 @@ jobs:
           name: test-results
           path: openmrs-module-appointmentscheduling/**/surefire-reports/**
 
-      - name: Upload SBOM
+      - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-cyclonedx
-          path: openmrs-module-appointmentscheduling/target/bom.*
+          name: sbom-cyclonedx-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}
+          path: |
+            openmrs-module-appointmentscheduling/target/bom.json
+            openmrs-module-appointmentscheduling/target/bom.xml
+
+      - name: Upload Snyk SCA report (SARIF + JSON)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-sca-report-${{ steps.meta.outputs.date }}
+          path: |
+            openmrs-module-appointmentscheduling/snyk.sarif
+            openmrs-module-appointmentscheduling/snyk-sca.json
 
   docker-build:
     name: Build & Push Docker Image
@@ -75,6 +201,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write   # nodig voor Trivy SARIF upload
 
     steps:
       - uses: actions/checkout@v4
@@ -123,6 +250,30 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ github.run_number }}
 
+      # ── Container image vulnerability scan (Trivy) ──────────────────────────
+      # Mitigeert: CICD-05 (geen CVE-scan op container image)
+      # Scant de zojuist gebouwde image op bekende CVE's.
+      # False positives: voeg CVE-ID toe aan .trivyignore in de repository-root.
+      # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+      - name: Trivy — scan container image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: sarif
+          output: trivy-image-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: ${{ (startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
+          # Op develop: kans 0 (waarschuwing). Op release/* en main: exit-code 1 (blokkeert).
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image-results.sarif
+          category: trivy-container
+
   deploy-test:
     name: Deploy to Test
     needs: docker-build
@@ -135,21 +286,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Test Server
+      # Mitigeert CICD-07: SSH key geladen in ssh-agent (geheugen), nooit naar schijf geschreven.
+      # Mitigeert CICD-10: host key opgeslagen als secret (TOFU vermeden).
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TEST_SSH_KEY }}
+
+      - name: Add known host key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.TEST_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.TEST_SERVER_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.TEST_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/deploy_key ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'EOF'
+      - name: Deploy to Test Server
+        run: |
+          ssh ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'EOF'
             cd /opt/openmrs/test
             docker-compose -f docker-compose.test.yml pull
             docker-compose -f docker-compose.test.yml up -d
             docker-compose -f docker-compose.test.yml logs openmrs --tail=50
           EOF
-
-          rm ~/.ssh/deploy_key
 
       - name: Health Check
         run: |
@@ -195,21 +352,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Acceptance Server
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.ACC_SSH_KEY }}
+
+      - name: Add known host key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.ACC_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.ACC_SERVER_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.ACC_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/deploy_key ${{ secrets.ACC_SERVER_USER }}@${{ secrets.ACC_SERVER_HOST }} << 'EOF'
+      - name: Deploy to Acceptance Server
+        run: |
+          ssh ${{ secrets.ACC_SERVER_USER }}@${{ secrets.ACC_SERVER_HOST }} << 'EOF'
             cd /opt/openmrs/acceptance
             docker-compose -f docker-compose.acceptance.yml pull
             docker-compose -f docker-compose.acceptance.yml up -d
             docker-compose -f docker-compose.acceptance.yml logs openmrs --tail=50
           EOF
-
-          rm ~/.ssh/deploy_key
 
       - name: Health Check
         run: |
@@ -264,14 +425,20 @@ jobs:
           fi
           echo "Valid version: $VERSION"
 
-      - name: Database Backup
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: Add known host key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.PROD_SERVER_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.PROD_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/deploy_key ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
+      - name: Database Backup
+        run: |
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
             BACKUP_DIR="/backups/$(date +%Y%m%d_%H%M%S)"
             mkdir -p $BACKUP_DIR
             docker-compose -f /opt/openmrs/prod/docker-compose.prod.yml exec -T openmrs-db \
@@ -279,27 +446,25 @@ jobs:
             echo "Backup created: $BACKUP_DIR"
           EOF
 
-          rm ~/.ssh/deploy_key
+      # Mitigeert CICD-08: vorige image-tag opgeslagen voor automatische rollback.
+      - name: Sla vorige image-tag op
+        run: |
+          PREV_TAG=$(ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} \
+            "docker inspect --format='{{.Config.Image}}' \$(docker-compose -f /opt/openmrs/prod/docker-compose.prod.yml ps -q openmrs) 2>/dev/null || echo 'none'")
+          echo "PREVIOUS_IMAGE=$PREV_TAG" >> $GITHUB_ENV
 
       - name: Deploy to Production
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.PROD_SERVER_HOST }} >> ~/.ssh/known_hosts
-
-          ssh -i ~/.ssh/deploy_key ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
             cd /opt/openmrs/prod
-            docker-compose -f docker-compose.prod.yml down
             docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
             sleep 60
             docker-compose -f docker-compose.prod.yml ps
           EOF
 
-          rm ~/.ssh/deploy_key
-
       - name: Health Check
+        id: health-check
         run: |
           for i in {1..10}; do
             if curl -f https://${{ secrets.PROD_SERVER_HOST }}/openmrs/admin > /dev/null 2>&1; then
@@ -311,6 +476,19 @@ jobs:
           done
           echo "Production health check failed"
           exit 1
+
+      # Mitigeert CICD-08: automatische rollback naar vorige image bij health check failure.
+      - name: Rollback naar vorige image
+        if: failure() && steps.health-check.outcome == 'failure' && env.PREVIOUS_IMAGE != 'none'
+        run: |
+          echo "Health check mislukt — rollback naar: $PREVIOUS_IMAGE"
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << EOF
+            cd /opt/openmrs/prod
+            docker-compose -f docker-compose.prod.yml down
+            docker pull $PREVIOUS_IMAGE
+            OPENMRS_IMAGE=$PREVIOUS_IMAGE docker-compose -f docker-compose.prod.yml up -d
+            echo "Rollback voltooid naar: $PREVIOUS_IMAGE"
+          EOF
 
       - name: Slack Success Notification
         if: success()

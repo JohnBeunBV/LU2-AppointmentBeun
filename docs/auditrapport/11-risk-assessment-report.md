@@ -1,4 +1,4 @@
-# Risk Assessment Report — OpenMRS Appointment Scheduler
+# Risk Assessment Report - OpenMRS Appointment Scheduler
 
 **Sprint:** 2  
 **Taak:** SOF-38: Risk Assessment Report opstellen  

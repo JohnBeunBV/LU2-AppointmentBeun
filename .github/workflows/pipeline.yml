@@ -152,15 +152,20 @@ jobs:
         # Formaat: CycloneDX (NEN-7510 8.8 + CRA machineleesbaar vereiste)
 
       - name: Commit versioned SBOM to repository
+        if: github.event_name != 'pull_request'   # sla over bij PR runs
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          git fetch origin ${{ github.ref_name }}
+          git checkout ${{ github.ref_name }}
+
           git add ../sbom/
           git diff --cached --quiet || git commit -m \
             "chore: SBOM bijgewerkt voor v${{ steps.meta.outputs.version }} - ${{ steps.meta.outputs.date }} [skip ci]"
           git pull --rebase origin ${{ github.ref_name }}
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin ${{ github.ref_name }}
         working-directory: ./openmrs-module-appointmentscheduling
 
       # ── Artefacten uploaden (audit trail voor deze run) ──────────────────────

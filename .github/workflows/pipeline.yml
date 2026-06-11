@@ -46,7 +46,8 @@ jobs:
     needs: secret-scan
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write          # nodig voor git commit van SBOM
+      security-events: write   # nodig voor upload-sarif naar GitHub Security tab
 
     defaults:
       run:
@@ -68,8 +69,7 @@ jobs:
         run: mvn clean verify
 
       # ── SAST: SonarQube ─────────────────────────────────────────────────────
-      # Mitigeert: CICD-03 (continue-on-error verwijderd op release/* en main)
-      # Op develop: waarschuwing (continue-on-error: true); op release/* en main: hard blokkeren.
+      # Mitigeert: CICD-03 | NEN-7510: 8.29
       - name: SonarQube Analysis (develop — waarschuwing)
         if: github.ref == 'refs/heads/develop'
         run: |
@@ -88,25 +88,79 @@ jobs:
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true
-        # Geen continue-on-error: quality gate failure blokkeert de build
 
-      # ── SCA: Dependency vulnerability scan (OWASP) ──────────────────────────
-      # Mitigeert: CICD-05 (geen SCA-scan op dependencies)
-      # False positives: voeg toe aan owasp/suppressions.xml
+      # ── SCA: Snyk dependency vulnerability scan ──────────────────────────────
+      # Mitigeert: CICD-05 | NEN-7510: 8.8 (kwetsbaarheidsbeheer dependencies)
+      # Drempel: high = CVSS ≥ 7, equivalent aan de oude -DfailBuildOnCVSS=7.
+      # False positives: voeg toe aan .snyk met vervaldatum en onderbouwing.
       # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
-      - name: OWASP Dependency Check (SCA)
-        run: |
-          mvn org.owasp:dependency-check-maven:10.0.4:check \
-            -DfailBuildOnCVSS=7 \
-            -DsuppressionFile=../owasp/suppressions.xml \
-            -Dformats=HTML,JSON \
-            -DnvdApiKey=${{ secrets.NVD_API_KEY }} \
-            -DnvdApiDelay=6000 \
-            -DossindexAnalyzerEnabled=false
-        continue-on-error: ${{ github.ref == 'refs/heads/develop' }}
-      - name: Generate SBOM
-        run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
+      - name: Snyk SCA Scan (develop — waarschuwing)
+        if: github.ref == 'refs/heads/develop'
+        uses: snyk/actions/maven-3-jdk-11@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --severity-threshold=high
+            --sarif-file-output=snyk.sarif
+            --all-projects
+            --json-file-output=snyk-sca.json
 
+      - name: Snyk SCA Scan (release & main — hard gate)
+        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        uses: snyk/actions/maven-3-jdk-11@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --severity-threshold=high
+            --sarif-file-output=snyk.sarif
+            --all-projects
+            --json-file-output=snyk-sca.json
+
+      - name: Upload Snyk SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: openmrs-module-appointmentscheduling/snyk.sarif
+        continue-on-error: true
+
+      # ── SBOM generatie + versioned opslag ────────────────────────────────────
+      # NEN-7510: 8.8 (inventarisatie componenten) + 8.9 (configuratiebeheer)
+      # CRA vereist: machineleesbaar, up-to-date per release, bewaard met datum.
+      # Bewijs voor auditor: SBOM gecommit in repo met datum + versie in bestandsnaam.
+      - name: Generate SBOM (CycloneDX)
+        run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.8.0:makeAggregateBom
+
+      - name: Determine version and date
+        id: meta
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          DATE=$(date -u '+%Y%m%d')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+
+      - name: Store versioned SBOM in repository
+        run: |
+          mkdir -p ../sbom
+          cp target/bom.json ../sbom/sbom-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}.json
+          cp target/bom.xml  ../sbom/sbom-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}.xml
+        # Bewaard als: sbom/sbom-1.0.0-SNAPSHOT-20260611.json
+        # Formaat: CycloneDX (NEN-7510 8.8 + CRA machineleesbaar vereiste)
+
+      - name: Commit versioned SBOM to repository
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ../sbom/
+          # Alleen committen als er iets gewijzigd is
+          git diff --cached --quiet || git commit -m \
+            "chore: SBOM bijgewerkt voor v${{ steps.meta.outputs.version }} - ${{ steps.meta.outputs.date }} [skip ci]"
+          git push
+        working-directory: ./openmrs-module-appointmentscheduling
+
+      # ── Artefacten uploaden (audit trail voor deze run) ──────────────────────
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -114,18 +168,22 @@ jobs:
           name: test-results
           path: openmrs-module-appointmentscheduling/**/surefire-reports/**
 
-      - name: Upload SBOM
+      - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-cyclonedx
-          path: openmrs-module-appointmentscheduling/target/bom.*
+          name: sbom-cyclonedx-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}
+          path: |
+            openmrs-module-appointmentscheduling/target/bom.json
+            openmrs-module-appointmentscheduling/target/bom.xml
 
-      - name: Upload OWASP Dependency Check report
+      - name: Upload Snyk SCA report (SARIF + JSON)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dependency-check-report
-          path: openmrs-module-appointmentscheduling/target/dependency-check-report.*
+          name: snyk-sca-report-${{ steps.meta.outputs.date }}
+          path: |
+            openmrs-module-appointmentscheduling/snyk.sarif
+            openmrs-module-appointmentscheduling/snyk-sca.json
 
   docker-build:
     name: Build & Push Docker Image

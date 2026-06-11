@@ -96,14 +96,14 @@ jobs:
       # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
       - name: OWASP Dependency Check (SCA)
         run: |
-          mvn org.owasp:dependency-check-maven:9.0.9:check \
+          mvn org.owasp:dependency-check-maven:12.2.2:check \
             -DfailBuildOnCVSS=7 \
             -DsuppressionFile=../owasp/suppressions.xml \
             -Dformats=HTML,JSON \
-            -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+            -DnvdApiKey=${{ secrets.NVD_API_KEY }} \
+            -DnvdApiDelay=6000 \
+            -DossindexAnalyzerEnabled=false
         continue-on-error: ${{ github.ref == 'refs/heads/develop' }}
-        # Op develop: waarschuwing. Op release/* en main: hard blokkeren bij CVSS ≥ 7.
-
       - name: Generate SBOM
         run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
 

@@ -57,6 +57,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0        # volledige history, niet shallow
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up JDK 8
         uses: actions/setup-java@v4
@@ -153,11 +155,12 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add ../sbom/
-          # Alleen committen als er iets gewijzigd is
           git diff --cached --quiet || git commit -m \
             "chore: SBOM bijgewerkt voor v${{ steps.meta.outputs.version }} - ${{ steps.meta.outputs.date }} [skip ci]"
-          git push
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
         working-directory: ./openmrs-module-appointmentscheduling
 
       # ── Artefacten uploaden (audit trail voor deze run) ──────────────────────

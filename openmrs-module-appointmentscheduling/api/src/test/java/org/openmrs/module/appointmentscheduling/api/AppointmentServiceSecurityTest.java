@@ -37,35 +37,21 @@ public class AppointmentServiceSecurityTest extends BaseModuleContextSensitiveTe
     }
 
     // ── PII-logging vulnerability ────────────────────────────────────────────────
+    // getAppointmentsForPatientWithLogging staat NIET op de AppointmentService interface
+    // en is daardoor niet testbaar via de service proxy. De vulnerability is gedocumenteerd
+    // in CLAUDE.md en docs/kwaliteit/03-wijzigingen-en-tests.md.
+    // De onderliggende methode getAppointmentsOfPatient (wél op de interface) wordt
+    // hieronder indirect getest via de bookAppointment en changeAppointmentStatus tests.
 
-    /**
-     * Documenteringstest voor bekende PII-logging vulnerability (zie CLAUDE.md).
-     * getAppointmentsForPatientWithLogging logt naam, geboortedatum en BSN van de patiënt.
-     * Deze test verifieert dat de methode delegeert naar getAppointmentsOfPatient zodat
-     * regressie op de returnwaarde direct opvalt.
-     */
     @Test
-    public void getAppointmentsForPatientWithLogging_shouldReturnSameResultAsGetAppointmentsOfPatient() {
+    public void getAppointmentsOfPatient_shouldReturnAppointmentsForKnownPatient() {
         Patient patient = Context.getPatientService().getPatient(1);
         assertNotNull(patient);
 
-        List<Appointment> viaLogging = service.getAppointmentsForPatientWithLogging(patient);
-        List<Appointment> direct = service.getAppointmentsOfPatient(patient);
-
-        assertEquals(
-            "PII-logging variant moet exact hetzelfde resultaat teruggeven als de directe aanroep",
-            direct.size(), viaLogging.size()
-        );
-    }
-
-    @Test
-    public void getAppointmentsForPatientWithLogging_shouldNotReturnNullForKnownPatient() {
-        Patient patient = Context.getPatientService().getPatient(2);
-        assertNotNull(patient);
-
-        List<Appointment> result = service.getAppointmentsForPatientWithLogging(patient);
+        List<Appointment> result = service.getAppointmentsOfPatient(patient);
 
         assertNotNull("Resultaat mag niet null zijn", result);
+        assertFalse("Patiënt 1 heeft afspraken in de testdataset", result.isEmpty());
     }
 
     // ── bookAppointment guards ────────────────────────────────────────────────────

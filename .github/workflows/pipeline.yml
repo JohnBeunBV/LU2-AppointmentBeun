@@ -263,7 +263,7 @@ jobs:
       # False positives: voeg CVE-ID toe aan .trivyignore in de repository-root.
       # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
       - name: Trivy — scan container image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: sarif

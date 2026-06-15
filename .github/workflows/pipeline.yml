@@ -176,6 +176,13 @@ jobs:
           name: test-results
           path: openmrs-module-appointmentscheduling/**/surefire-reports/**
 
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}
+          path: openmrs-module-appointmentscheduling/**/target/site/jacoco/
+
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:

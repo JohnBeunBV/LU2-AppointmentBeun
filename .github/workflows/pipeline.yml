@@ -277,6 +277,14 @@ jobs:
             EXIT_CODE=1
           fi
 
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop-latest"
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:acceptance-${{ github.sha }}"
+          else
+            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          fi
+
           trivy image \
             --format sarif \
             --output trivy-image-results.sarif \
@@ -284,7 +292,7 @@ jobs:
             --ignore-unfixed \
             --exit-code $EXIT_CODE \
             $IGNORE_FILE \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            $IMAGE_TAG
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
@@ -292,6 +300,7 @@ jobs:
         with:
           sarif_file: trivy-image-results.sarif
           category: trivy-container
+        continue-on-error: true
 
   deploy-test:
     name: Deploy to Test

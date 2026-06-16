@@ -398,12 +398,27 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	public Appointment saveAppointment(Appointment appointment)
 			throws APIException {
 		ValidateUtil.validate(appointment);
-		return (Appointment) getAppointmentDAO().saveOrUpdate(appointment);
+		Appointment saved = (Appointment) getAppointmentDAO().saveOrUpdate(appointment);
+		String userUuid = Context.getAuthenticatedUser() != null ? Context.getAuthenticatedUser().getUuid() : "anonymous";
+		String patientUuid = saved.getPatient() != null ? saved.getPatient().getUuid() : "null";
+		String typeUuid = saved.getAppointmentType() != null ? saved.getAppointmentType().getUuid() : "null";
+		log.info("[AUDIT] action=saveAppointment appointmentUuid=" + saved.getUuid()
+				+ " patientUuid=" + patientUuid
+				+ " typeUuid=" + typeUuid
+				+ " status=" + saved.getStatus()
+				+ " userUuid=" + userUuid);
+		return saved;
 	}
 
 	@Override
 	@Transactional
 	public Appointment voidAppointment(Appointment appointment, String reason) {
+		String userUuid = Context.getAuthenticatedUser() != null ? Context.getAuthenticatedUser().getUuid() : "anonymous";
+		String patientUuid = appointment.getPatient() != null ? appointment.getPatient().getUuid() : "null";
+		log.info("[AUDIT] action=voidAppointment appointmentUuid=" + appointment.getUuid()
+				+ " patientUuid=" + patientUuid
+				+ " reason=" + reason
+				+ " userUuid=" + userUuid);
 		return saveAppointment(appointment);
 	}
 
@@ -855,6 +870,13 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	public void changeAppointmentStatus(Appointment appointment,
 			AppointmentStatus newStatus) {
 		if (appointment != null) {
+			String userUuid = Context.getAuthenticatedUser() != null ? Context.getAuthenticatedUser().getUuid() : "anonymous";
+			String patientUuid = appointment.getPatient() != null ? appointment.getPatient().getUuid() : "null";
+			log.info("[AUDIT] action=changeAppointmentStatus appointmentUuid=" + appointment.getUuid()
+					+ " patientUuid=" + patientUuid
+					+ " oldStatus=" + appointment.getStatus()
+					+ " newStatus=" + newStatus
+					+ " userUuid=" + userUuid);
 
 			Date currentDate = new Date();
 
@@ -1195,6 +1217,17 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 		Context.getService(AppointmentService.class).saveAppointment(appointment);
 
+		String userUuid = Context.getAuthenticatedUser() != null ? Context.getAuthenticatedUser().getUuid() : "anonymous";
+		String patientUuid = appointment.getPatient() != null ? appointment.getPatient().getUuid() : "null";
+		String timeSlotUuid = appointment.getTimeSlot() != null ? appointment.getTimeSlot().getUuid() : "null";
+		String typeUuid = appointment.getAppointmentType() != null ? appointment.getAppointmentType().getUuid() : "null";
+		log.info("[AUDIT] action=bookAppointment appointmentUuid=" + appointment.getUuid()
+				+ " patientUuid=" + patientUuid
+				+ " timeSlotUuid=" + timeSlotUuid
+				+ " typeUuid=" + typeUuid
+				+ " status=" + appointment.getStatus()
+				+ " userUuid=" + userUuid);
+
 		AppointmentStatusHistory history = new AppointmentStatusHistory(appointment, appointment.getStatus(), getAppointmentCurrentStatusStartDate(appointment), null);
 		Context.getService(AppointmentService.class).saveAppointmentStatusHistory(history);
 		return appointment;
@@ -1421,13 +1454,12 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
     /**
      * Returns upcoming appointments for a patient.
-     * VULNERABILITY: PII logging - logs patient name, DOB and appointment details to application log
+     * R07 fix: PII (name, DOB, identifier, gender) removed from log — only UUID is logged.
      */
     public java.util.List<Appointment> getAppointmentsForPatientWithLogging(Patient patient) {
-        log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonName()
-                + " dob=" + patient.getBirthdate()
-                + " identifier=" + (patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().getIdentifier() : "none")
-                + " gender=" + patient.getGender());
-        return getAppointmentsForPatient(patient);
+        String userUuid = Context.getAuthenticatedUser() != null ? Context.getAuthenticatedUser().getUuid() : "anonymous";
+        log.info("[AUDIT] action=getAppointmentsForPatient patientUuid=" + patient.getUuid()
+                + " userUuid=" + userUuid);
+        return getAppointmentsOfPatient(patient);
     }
 }

@@ -1,0 +1,557 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [develop, main, "release/*"]
+  pull_request:
+    branches: [develop, main, "release/*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., v1.2.3)"
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SAST: Secret scanning — loopt als eerste, blokkeert bij fund van secrets
+  # Mitigeert: CICD-04 (geen geheimscanner)
+  # ─────────────────────────────────────────────────────────────────────────────
+  secret-scan:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        # False positives: voeg toe aan .gitleaks.toml in de repository-root.
+        # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+
+  build-and-test:
+    name: Build, Test & SBOM
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # nodig voor git commit van SBOM
+      security-events: write # nodig voor upload-sarif naar GitHub Security tab
+
+    defaults:
+      run:
+        working-directory: ./openmrs-module-appointmentscheduling
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0 # volledige history, niet shallow
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build and run tests
+        run: mvn clean verify
+
+      # ── SAST: SonarQube ─────────────────────────────────────────────────────
+      # Mitigeert: CICD-03 | NEN-7510: 8.29
+      - name: SonarQube Analysis (develop — waarschuwing)
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ github.repository }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.qualitygate.wait=true
+        continue-on-error: true
+
+      - name: SonarQube Analysis (release & main — hard gate)
+        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ github.repository }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.qualitygate.wait=true
+
+      # ── SCA: Snyk dependency vulnerability scan ──────────────────────────────
+      # Mitigeert: CICD-05 | NEN-7510: 8.8 (kwetsbaarheidsbeheer dependencies)
+      # Drempel: high = CVSS ≥ 7, equivalent aan de oude -DfailBuildOnCVSS=7.
+      # False positives: voeg toe aan .snyk met vervaldatum en onderbouwing.
+      # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+      - name: Snyk SCA Scan (develop — waarschuwing)
+        if: github.ref == 'refs/heads/develop'
+        uses: snyk/actions/maven-3-jdk-11@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --severity-threshold=high
+            --sarif-file-output=snyk.sarif
+            --all-projects
+            --json-file-output=snyk-sca.json
+
+      - name: Snyk SCA Scan (release & main — hard gate)
+        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        uses: snyk/actions/maven-3-jdk-11@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --severity-threshold=high
+            --sarif-file-output=snyk.sarif
+            --all-projects
+            --json-file-output=snyk-sca.json
+
+      - name: Upload Snyk SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: openmrs-module-appointmentscheduling/snyk.sarif
+        continue-on-error: true
+
+      # ── SBOM generatie + versioned opslag ────────────────────────────────────
+      # NEN-7510: 8.8 (inventarisatie componenten) + 8.9 (configuratiebeheer)
+      # CRA vereist: machineleesbaar, up-to-date per release, bewaard met datum.
+      # Bewijs voor auditor: SBOM gecommit in repo met datum + versie in bestandsnaam.
+      - name: Generate SBOM (CycloneDX)
+        run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.8.0:makeAggregateBom
+
+      - name: Determine version and date
+        id: meta
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          DATE=$(date -u '+%Y%m%d')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+
+      - name: Store versioned SBOM in repository
+        run: |
+          mkdir -p ../sbom
+          cp target/bom.json ../sbom/sbom-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}.json
+          cp target/bom.xml  ../sbom/sbom-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}.xml
+        # Bewaard als: sbom/sbom-1.0.0-SNAPSHOT-20260611.json
+        # Formaat: CycloneDX (NEN-7510 8.8 + CRA machineleesbaar vereiste)
+
+      # - name: Commit versioned SBOM to repository
+      #   if: github.event_name != 'pull_request'   # sla over bij PR runs
+      #   run: |
+      #     git config user.name  "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+      #     git fetch origin ${{ github.ref_name }}
+      #     git checkout ${{ github.ref_name }}
+
+      #     git add ../sbom/
+      #     git diff --cached --quiet || git commit -m \
+      #       "chore: SBOM bijgewerkt voor v${{ steps.meta.outputs.version }} - ${{ steps.meta.outputs.date }} [skip ci]"
+      #     git pull --rebase origin ${{ github.ref_name }}
+      #     git push origin ${{ github.ref_name }}
+      #   working-directory: ./openmrs-module-appointmentscheduling
+
+      # ── Artefacten uploaden (audit trail voor deze run) ──────────────────────
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: openmrs-module-appointmentscheduling/**/surefire-reports/**
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}
+          path: openmrs-module-appointmentscheduling/**/target/site/jacoco/
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}
+          path: |
+            openmrs-module-appointmentscheduling/target/bom.json
+            openmrs-module-appointmentscheduling/target/bom.xml
+
+      - name: Upload Snyk SCA report (SARIF + JSON)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-sca-report-${{ steps.meta.outputs.date }}
+          path: |
+            openmrs-module-appointmentscheduling/snyk.sarif
+            openmrs-module-appointmentscheduling/snyk-sca.json
+
+  docker-build:
+    name: Build & Push Docker Image
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.DEPLOYMENTS_ENABLED == 'true'
+    permissions:
+      contents: read
+      packages: write
+      security-events: write # nodig voor Trivy SARIF upload
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Lowercase image name
+        run: echo "IMAGE_NAME=${IMAGE_NAME,,}" >> $GITHUB_ENV
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (develop → test)
+        if: github.ref == 'refs/heads/develop'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .docker/Dockerfile
+          build-args: BUILD_ENV=test
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop-latest
+
+      - name: Build and push (release/* → acceptance)
+        if: startsWith(github.ref, 'refs/heads/release/')
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .docker/Dockerfile
+          build-args: BUILD_ENV=acceptance
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:acceptance-${{ github.sha }}
+
+      - name: Build and push (main / workflow_dispatch → production)
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .docker/Dockerfile
+          build-args: BUILD_ENV=production
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ github.run_number }}
+
+      # ── Container image vulnerability scan (Trivy) ──────────────────────────
+      # Mitigeert: CICD-05 (geen CVE-scan op container image)
+      # Scant de zojuist gebouwde image op bekende CVE's.
+      # False positives: voeg CVE-ID toe aan .trivyignore in de repository-root.
+      # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
+      - name: Trivy — installeer scanner
+        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Trivy — scan container image
+        run: |
+          IGNORE_FILE=""
+          if [ -f .trivyignore ]; then IGNORE_FILE="--ignorefile .trivyignore"; fi
+
+          EXIT_CODE=0
+          if [[ "${{ github.ref }}" == refs/heads/release/* ]] || \
+             [[ "${{ github.ref }}" == "refs/heads/main" ]] || \
+             [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            EXIT_CODE=1
+          fi
+
+          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop-latest"
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:acceptance-${{ github.sha }}"
+          else
+            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          fi
+
+          trivy image \
+            --format sarif \
+            --output trivy-image-results.sarif \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --exit-code $EXIT_CODE \
+            $IGNORE_FILE \
+            $IMAGE_TAG
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image-results.sarif
+          category: trivy-container
+        continue-on-error: true
+
+  deploy-test:
+    name: Deploy to Test
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push' && vars.DEPLOYMENTS_ENABLED == 'true'
+    environment:
+      name: test
+      url: ${{ vars.TEST_SERVER_HOST }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Mitigeert CICD-07: SSH key geladen in ssh-agent (geheugen), nooit naar schijf geschreven.
+      # Mitigeert CICD-10: host key opgeslagen als secret (TOFU vermeden).
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.TEST_SSH_KEY }}
+
+      - name: Add known host key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TEST_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy to Test Server
+        run: |
+          ssh ${{ secrets.TEST_SERVER_USER }}@${{ secrets.TEST_SERVER_HOST }} << 'EOF'
+            cd /opt/openmrs/test
+            docker-compose -f docker-compose.test.yml pull
+            docker-compose -f docker-compose.test.yml up -d
+            docker-compose -f docker-compose.test.yml logs openmrs --tail=50
+          EOF
+
+      - name: Health Check
+        run: |
+          for i in {1..10}; do
+            if curl -f http://${{ secrets.TEST_SERVER_HOST }}:8081/openmrs/admin > /dev/null 2>&1; then
+              echo "Test health check passed"
+              exit 0
+            fi
+            echo "Waiting... ($i/10)"
+            sleep 30
+          done
+          echo "Test health check failed"
+          exit 1
+
+      - name: Slack notification
+        if: always()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "Test deployment: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Test Environment Deployment*\nStatus: *${{ job.status }}*\nCommit: `${{ github.sha }}`"
+                  }
+                }
+              ]
+            }
+
+  deploy-acceptance:
+    name: Deploy to Acceptance
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/release/') && github.event_name == 'push' && vars.DEPLOYMENTS_ENABLED == 'true'
+    environment:
+      name: acceptance
+      url: ${{ vars.ACC_SERVER_HOST }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.ACC_SSH_KEY }}
+
+      - name: Add known host key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ACC_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy to Acceptance Server
+        run: |
+          ssh ${{ secrets.ACC_SERVER_USER }}@${{ secrets.ACC_SERVER_HOST }} << 'EOF'
+            cd /opt/openmrs/acceptance
+            docker-compose -f docker-compose.acceptance.yml pull
+            docker-compose -f docker-compose.acceptance.yml up -d
+            docker-compose -f docker-compose.acceptance.yml logs openmrs --tail=50
+          EOF
+
+      - name: Health Check
+        run: |
+          for i in {1..10}; do
+            if curl -f http://${{ secrets.ACC_SERVER_HOST }}:8082/openmrs/admin > /dev/null 2>&1; then
+              echo "Acceptance health check passed"
+              exit 0
+            fi
+            echo "Waiting... ($i/10)"
+            sleep 15
+          done
+          echo "Acceptance health check failed"
+          exit 1
+
+      - name: Slack notification
+        if: always()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "Acceptance deployment: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Acceptance Environment Deployment*\nStatus: *${{ job.status }}*\nBranch: `${{ github.ref_name }}`\nCommit: `${{ github.sha }}`"
+                  }
+                }
+              ]
+            }
+
+  deploy-prod:
+    name: Deploy to Production
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && vars.DEPLOYMENTS_ENABLED == 'true'
+    environment:
+      name: production
+      url: ${{ vars.PROD_SERVER_HOST }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format. Use: v1.2.3"
+            exit 1
+          fi
+          echo "Valid version: $VERSION"
+
+      - name: Load SSH key into agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: Add known host key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Database Backup
+        run: |
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
+            BACKUP_DIR="/backups/$(date +%Y%m%d_%H%M%S)"
+            mkdir -p $BACKUP_DIR
+            docker-compose -f /opt/openmrs/prod/docker-compose.prod.yml exec -T openmrs-db \
+              mysqldump -u"$DB_USER" -p"$DB_PASSWORD" --all-databases > $BACKUP_DIR/openmrs_backup.sql
+            echo "Backup created: $BACKUP_DIR"
+          EOF
+
+      # Mitigeert CICD-08: vorige image-tag opgeslagen voor automatische rollback.
+      - name: Sla vorige image-tag op
+        run: |
+          PREV_TAG=$(ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} \
+            "docker inspect --format='{{.Config.Image}}' \$(docker-compose -f /opt/openmrs/prod/docker-compose.prod.yml ps -q openmrs) 2>/dev/null || echo 'none'")
+          echo "PREVIOUS_IMAGE=$PREV_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to Production
+        run: |
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << 'EOF'
+            cd /opt/openmrs/prod
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            sleep 60
+            docker-compose -f docker-compose.prod.yml ps
+          EOF
+
+      - name: Health Check
+        id: health-check
+        run: |
+          for i in {1..10}; do
+            if curl -f https://${{ secrets.PROD_SERVER_HOST }}/openmrs/admin > /dev/null 2>&1; then
+              echo "Production health check passed"
+              exit 0
+            fi
+            echo "Waiting... ($i/10)"
+            sleep 10
+          done
+          echo "Production health check failed"
+          exit 1
+
+      # Mitigeert CICD-08: automatische rollback naar vorige image bij health check failure.
+      - name: Rollback naar vorige image
+        if: failure() && steps.health-check.outcome == 'failure' && env.PREVIOUS_IMAGE != 'none'
+        run: |
+          echo "Health check mislukt — rollback naar: $PREVIOUS_IMAGE"
+          ssh ${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }} << EOF
+            cd /opt/openmrs/prod
+            docker-compose -f docker-compose.prod.yml down
+            docker pull $PREVIOUS_IMAGE
+            OPENMRS_IMAGE=$PREVIOUS_IMAGE docker-compose -f docker-compose.prod.yml up -d
+            echo "Rollback voltooid naar: $PREVIOUS_IMAGE"
+          EOF
+
+      - name: Slack Success Notification
+        if: success()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "Production deployment successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*PRODUCTION DEPLOYMENT SUCCESS*\nVersion: *${{ github.event.inputs.version }}*\nBy: ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+
+      - name: Slack Failure Notification
+        if: failure()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "Production deployment FAILED",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*PRODUCTION DEPLOYMENT FAILED*\nVersion: *${{ github.event.inputs.version }}*\nBy: ${{ github.actor }}\nREQUIRES IMMEDIATE ATTENTION"
+                  }
+                }
+              ]
+            }

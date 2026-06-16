@@ -52,13 +52,13 @@ COPY --from=builder /build/appointmentscheduling/omod/target/*.omod /opt/openmrs
 
 # Set JVM options per environment; docker-compose env vars override at runtime
 RUN if [ "$BUILD_ENV" = "production" ]; then \
-        printf 'export JAVA_OPTS="-Xmx2048m -Xms1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Djava.security.egd=file:/dev/./urandom"\n' \
+        printf 'export JAVA_OPTS="-Xmx2048m -Xms1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Djava.security.egd=file:/dev/./urandom -DOPENMRS_APPLICATION_DATA_DIRECTORY=/opt/openmrs/data/"\n' \
           > /opt/tomcat/bin/setenv.sh; \
     elif [ "$BUILD_ENV" = "development" ]; then \
-        printf 'export JAVA_OPTS="-Xmx512m -Xms256m -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005 -Djava.security.egd=file:/dev/./urandom"\n' \
+        printf 'export JAVA_OPTS="-Xmx512m -Xms256m -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005 -Djava.security.egd=file:/dev/./urandom -DOPENMRS_APPLICATION_DATA_DIRECTORY=/opt/openmrs/data/"\n' \
           > /opt/tomcat/bin/setenv.sh; \
     else \
-        printf 'export JAVA_OPTS="-Xmx1024m -Xms512m -Djava.security.egd=file:/dev/./urandom"\n' \
+        printf 'export JAVA_OPTS="-Xmx1024m -Xms512m -Djava.security.egd=file:/dev/./urandom -DOPENMRS_APPLICATION_DATA_DIRECTORY=/opt/openmrs/data/"\n' \
           > /opt/tomcat/bin/setenv.sh; \
     fi && chmod +x /opt/tomcat/bin/setenv.sh
 

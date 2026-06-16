@@ -41,6 +41,7 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 | ID  | Bevinding                                                    | Score | Zone      | Status  | Prioriteit   | NEN-7510 | Eigenaar |
 | --- | ------------------------------------------------------------ | :---: | --------- | ------- | ------------ | -------- | -------- |
 | R01 | PII in logbestanden                                          |  25   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.8.15   | Dev-team |
+| R13 | HQL-injectie in `searchAppointmentsByPatientName`            |  25   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.8.24   | Dev-team |
 | R02 | Hardcoded credentials in broncode                            |  20   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.9.2    | Dev-team |
 | R03 | Geen data-level ACL                                          |  16   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.8.3    | Dev-team |
 | R04 | Typfouten in privilege-constanten                            |  15   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.8.3    | Dev-team |
@@ -61,6 +62,40 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 ---
 
 ## 4. Gedetailleerde acties per in-scope bevinding
+
+---
+
+### R13 — HQL-injectie in `searchAppointmentsByPatientName`
+
+**Gevonden via:** Penetratietest (14-pentest-rapport.md, PT-01)  
+**Bestand:** `api/src/main/java/.../api/db/hibernate/HibernateAppointmentDAO.java`, regel 317
+
+**Probleem:**
+
+```java
+// VULNERABILITY: SQL injection - patientName is concatenated directly into query
+String hql = "from Appointment ap where ap.visit.patient.personName.givenName = '"
+    + patientName + "' or ap.visit.patient.personName.familyName = '" + patientName + "'";
+return super.sessionFactory.getCurrentSession().createQuery(hql).list();
+```
+
+`patientName` wordt rechtstreeks in de HQL-query geconcateneerd zonder parameterisatie. Een aanvaller die deze methode kan aanroepen met input als `' OR '1'='1` kan alle afspraken van alle patiënten opvragen, ongeacht autorisatie.
+
+**Actie:** Vervang de stringconcatenatie door een geparametriseerde query:
+
+```java
+String hql = "from Appointment ap"
+    + " where ap.visit.patient.personName.givenName = :name"
+    + " or ap.visit.patient.personName.familyName = :name";
+return super.sessionFactory.getCurrentSession()
+    .createQuery(hql)
+    .setParameter("name", patientName)
+    .list();
+```
+
+**Acceptatiecriterium:** Geen enkele query in de DAO-laag bevat stringconcatenatie met gebruikersinvoer. Gevalideerd door grep-check in CI: `grep -rn "createQuery.*+.*"`.
+
+**Restrisico na fix:** Laag — geparametriseerde queries voorkomen injectie volledig.
 
 ---
 
@@ -375,7 +410,7 @@ De onderstaande bevindingen zijn geïdentificeerd maar vallen buiten de scope va
 
 | Prioriteit        | Bevindingen                          | Aanpak                      |
 | ----------------- | ------------------------------------ | --------------------------- |
-| P1 — Kritiek (🔴) | R01, R02, R03, R04, CICD-03, CICD-04 | Oplossen in huidige sprint  |
+| P1 — Kritiek (🔴) | R01, R02, R03, R04, R13, CICD-03, CICD-04 | Oplossen in huidige sprint  |
 | P2 — Hoog (🟠)    | R05, R07, R09, R11, CICD-05          | Oplossen in volgende sprint |
 | P3 — Midden (🟡)  | CICD-06                              | Oplossen binnen 2 sprints   |
 

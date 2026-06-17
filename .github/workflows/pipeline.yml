@@ -84,6 +84,7 @@ jobs:
       - name: SonarQube Analysis
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mvn sonar:sonar \
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} \

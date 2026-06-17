@@ -75,7 +75,7 @@ jobs:
       # SONAR_HOST_URL is a repository variable (vars.*), not a secret.
       - name: SonarQube Analysis
         run: |
-          mvn sonar:sonar \
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.1.2184:sonar \
             -Dsonar.projectKey=${{ github.repository }} \
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \

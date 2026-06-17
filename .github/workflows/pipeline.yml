@@ -59,7 +59,13 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up JDK 8
+      - name: Set up JDK 17 (for SonarQube scanner bootstrap)
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Set up JDK 8 (build + test)
         uses: actions/setup-java@v4
         with:
           java-version: "8"
@@ -73,9 +79,13 @@ jobs:
       # Mitigeert: CICD-03 | NEN-7510: 8.29
       # Hard gate on all branches — no warning-only mode.
       # SONAR_HOST_URL is a repository variable (vars.*), not a secret.
+      # SonarQube server bootstrap sends Java-17-compiled scanner JARs,
+      # so we temporarily switch JAVA_HOME to JDK 17 for this step only.
       - name: SonarQube Analysis
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
         run: |
-          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.1.2184:sonar \
+          mvn sonar:sonar \
             -Dsonar.projectKey=${{ github.repository }} \
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \

@@ -18,7 +18,7 @@ env:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
-  # SAST: Secret scanning — loopt als eerste, blokkeert bij fund van secrets
+  # SAST: Secret scanning — blokkeert bij fund van secrets
   # Mitigeert: CICD-04 (geen geheimscanner)
   # ─────────────────────────────────────────────────────────────────────────────
   secret-scan:
@@ -39,15 +39,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
         # False positives: voeg toe aan .gitleaks.toml in de repository-root.
-        # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
 
   build-and-test:
     name: Build, Test & SBOM
     needs: secret-scan
     runs-on: ubuntu-latest
     permissions:
-      contents: write # nodig voor git commit van SBOM
-      security-events: write # nodig voor upload-sarif naar GitHub Security tab
+      contents: write
+      security-events: write
 
     defaults:
       run:
@@ -57,7 +56,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0 # volledige history, niet shallow
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up JDK 8
@@ -72,53 +71,32 @@ jobs:
 
       # ── SAST: SonarQube ─────────────────────────────────────────────────────
       # Mitigeert: CICD-03 | NEN-7510: 8.29
-      - name: SonarQube Analysis (develop — waarschuwing)
-        if: github.ref == 'refs/heads/develop'
+      # Hard gate on all branches — no warning-only mode.
+      # SONAR_HOST_URL is a repository variable (vars.*), not a secret.
+      - name: SonarQube Analysis
         run: |
           mvn sonar:sonar \
             -Dsonar.projectKey=${{ github.repository }} \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.qualitygate.wait=true
-        continue-on-error: true
-
-      - name: SonarQube Analysis (release & main — hard gate)
-        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ github.repository }} \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true
 
       # ── SCA: Snyk dependency vulnerability scan ──────────────────────────────
       # Mitigeert: CICD-05 | NEN-7510: 8.8 (kwetsbaarheidsbeheer dependencies)
-      # Drempel: high = CVSS ≥ 7, equivalent aan de oude -DfailBuildOnCVSS=7.
+      # Run via CLI so working-directory is respected (snyk/actions ignores it).
+      # Scans all projects including transitive OpenMRS module dependencies.
       # False positives: voeg toe aan .snyk met vervaldatum en onderbouwing.
-      # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
-      - name: Snyk SCA Scan (develop — waarschuwing)
-        if: github.ref == 'refs/heads/develop'
-        uses: snyk/actions/maven-3-jdk-11@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: >-
-            --severity-threshold=high
-            --sarif-file-output=snyk.sarif
-            --all-projects
-            --json-file-output=snyk-sca.json
+      - name: Install Snyk CLI
+        run: npm install -g snyk
 
-      - name: Snyk SCA Scan (release & main — hard gate)
-        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        uses: snyk/actions/maven-3-jdk-11@master
+      - name: Snyk SCA Scan
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: >-
-            --severity-threshold=high
-            --sarif-file-output=snyk.sarif
-            --all-projects
+        run: |
+          snyk test \
+            --severity-threshold=high \
+            --sarif-file-output=snyk.sarif \
+            --all-projects \
             --json-file-output=snyk-sca.json
 
       - name: Upload Snyk SARIF to GitHub Security tab
@@ -128,10 +106,11 @@ jobs:
           sarif_file: openmrs-module-appointmentscheduling/snyk.sarif
         continue-on-error: true
 
-      # ── SBOM generatie + versioned opslag ────────────────────────────────────
+      # ── SBOM generatie ────────────────────────────────────────────────────────
       # NEN-7510: 8.8 (inventarisatie componenten) + 8.9 (configuratiebeheer)
-      # CRA vereist: machineleesbaar, up-to-date per release, bewaard met datum.
-      # Bewijs voor auditor: SBOM gecommit in repo met datum + versie in bestandsnaam.
+      # makeAggregateBom includes all Maven submodules and their transitive deps,
+      # covering the openmrs-api, webservices.rest, and reporting modules declared
+      # as dependencies in pom.xml.
       - name: Generate SBOM (CycloneDX)
         run: mvn org.cyclonedx:cyclonedx-maven-plugin:2.8.0:makeAggregateBom
 
@@ -148,25 +127,6 @@ jobs:
           mkdir -p ../sbom
           cp target/bom.json ../sbom/sbom-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}.json
           cp target/bom.xml  ../sbom/sbom-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.date }}.xml
-        # Bewaard als: sbom/sbom-1.0.0-SNAPSHOT-20260611.json
-        # Formaat: CycloneDX (NEN-7510 8.8 + CRA machineleesbaar vereiste)
-
-      # - name: Commit versioned SBOM to repository
-      #   if: github.event_name != 'pull_request'   # sla over bij PR runs
-      #   run: |
-      #     git config user.name  "github-actions[bot]"
-      #     git config user.email "github-actions[bot]@users.noreply.github.com"
-      #     git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
-      #     git fetch origin ${{ github.ref_name }}
-      #     git checkout ${{ github.ref_name }}
-
-      #     git add ../sbom/
-      #     git diff --cached --quiet || git commit -m \
-      #       "chore: SBOM bijgewerkt voor v${{ steps.meta.outputs.version }} - ${{ steps.meta.outputs.date }} [skip ci]"
-      #     git pull --rebase origin ${{ github.ref_name }}
-      #     git push origin ${{ github.ref_name }}
-      #   working-directory: ./openmrs-module-appointmentscheduling
 
       # ── Artefacten uploaden (audit trail voor deze run) ──────────────────────
       - name: Upload test results
@@ -191,7 +151,7 @@ jobs:
             openmrs-module-appointmentscheduling/target/bom.json
             openmrs-module-appointmentscheduling/target/bom.xml
 
-      - name: Upload Snyk SCA report (SARIF + JSON)
+      - name: Upload Snyk SCA report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -208,7 +168,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-      security-events: write # nodig voor Trivy SARIF upload
+      security-events: write
 
     steps:
       - uses: actions/checkout@v4
@@ -218,6 +178,29 @@ jobs:
       - name: Lowercase image name
         run: echo "IMAGE_NAME=${IMAGE_NAME,,}" >> $GITHUB_ENV
 
+      # Compute BUILD_ENV and image tag from the current branch/event once,
+      # so a single build-push step handles all environments.
+      - name: Resolve build environment and image tag
+        id: resolve
+        run: |
+          REF="${{ github.ref }}"
+          SHA="${{ github.sha }}"
+          REGISTRY="${{ env.REGISTRY }}"
+          IMAGE="${{ env.IMAGE_NAME }}"
+
+          if [[ "$REF" == "refs/heads/develop" ]]; then
+            echo "build_env=test"           >> $GITHUB_OUTPUT
+            echo "tags=${REGISTRY}/${IMAGE}:develop-latest" >> $GITHUB_OUTPUT
+          elif [[ "$REF" == refs/heads/release/* ]]; then
+            echo "build_env=acceptance"     >> $GITHUB_OUTPUT
+            echo "tags=${REGISTRY}/${IMAGE}:acceptance-${SHA}" >> $GITHUB_OUTPUT
+          else
+            echo "build_env=production"     >> $GITHUB_OUTPUT
+            echo "tags=${REGISTRY}/${IMAGE}:latest${NEWLINE}${REGISTRY}/${IMAGE}:v${{ github.run_number }}" >> $GITHUB_OUTPUT
+          fi
+        env:
+          NEWLINE: "\n"
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
@@ -225,44 +208,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push (develop → test)
-        if: github.ref == 'refs/heads/develop'
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: .docker/Dockerfile
-          build-args: BUILD_ENV=test
+          build-args: BUILD_ENV=${{ steps.resolve.outputs.build_env }}
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop-latest
-
-      - name: Build and push (release/* → acceptance)
-        if: startsWith(github.ref, 'refs/heads/release/')
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: .docker/Dockerfile
-          build-args: BUILD_ENV=acceptance
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:acceptance-${{ github.sha }}
-
-      - name: Build and push (main / workflow_dispatch → production)
-        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: .docker/Dockerfile
-          build-args: BUILD_ENV=production
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ github.run_number }}
+          tags: ${{ steps.resolve.outputs.tags }}
 
       # ── Container image vulnerability scan (Trivy) ──────────────────────────
       # Mitigeert: CICD-05 (geen CVE-scan op container image)
-      # Scant de zojuist gebouwde image op bekende CVE's.
+      # Hard gate on all environments.
       # False positives: voeg CVE-ID toe aan .trivyignore in de repository-root.
-      # Zie docs/auditrapport/10-cicd-risico-evaluatie.md §5 voor het suppression-proces.
-      - name: Trivy — installeer scanner
+      - name: Install Trivy
         run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Trivy — scan container image
@@ -270,29 +229,17 @@ jobs:
           IGNORE_FILE=""
           if [ -f .trivyignore ]; then IGNORE_FILE="--ignorefile .trivyignore"; fi
 
-          EXIT_CODE=0
-          if [[ "${{ github.ref }}" == refs/heads/release/* ]] || \
-             [[ "${{ github.ref }}" == "refs/heads/main" ]] || \
-             [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            EXIT_CODE=1
-          fi
-
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop-latest"
-          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
-            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:acceptance-${{ github.sha }}"
-          else
-            IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-          fi
+          # Use the first tag from the resolve step (newline-safe: grab first line)
+          IMAGE_TAG=$(echo "${{ steps.resolve.outputs.tags }}" | head -1)
 
           trivy image \
             --format sarif \
             --output trivy-image-results.sarif \
             --severity CRITICAL,HIGH \
             --ignore-unfixed \
-            --exit-code $EXIT_CODE \
+            --exit-code 1 \
             $IGNORE_FILE \
-            $IMAGE_TAG
+            "$IMAGE_TAG"
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
@@ -314,8 +261,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Mitigeert CICD-07: SSH key geladen in ssh-agent (geheugen), nooit naar schijf geschreven.
-      # Mitigeert CICD-10: host key opgeslagen als secret (TOFU vermeden).
       - name: Load SSH key into agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -357,15 +302,7 @@ jobs:
           payload: |
             {
               "text": "Test deployment: ${{ job.status }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Test Environment Deployment*\nStatus: *${{ job.status }}*\nCommit: `${{ github.sha }}`"
-                  }
-                }
-              ]
+              "blocks": [{"type":"section","text":{"type":"mrkdwn","text":"*Test Environment Deployment*\nStatus: *${{ job.status }}*\nCommit: `${{ github.sha }}`"}}]
             }
 
   deploy-acceptance:
@@ -421,15 +358,7 @@ jobs:
           payload: |
             {
               "text": "Acceptance deployment: ${{ job.status }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Acceptance Environment Deployment*\nStatus: *${{ job.status }}*\nBranch: `${{ github.ref_name }}`\nCommit: `${{ github.sha }}`"
-                  }
-                }
-              ]
+              "blocks": [{"type":"section","text":{"type":"mrkdwn","text":"*Acceptance Environment Deployment*\nStatus: *${{ job.status }}*\nBranch: `${{ github.ref_name }}`\nCommit: `${{ github.sha }}`"}}]
             }
 
   deploy-prod:
@@ -451,7 +380,6 @@ jobs:
             echo "Invalid version format. Use: v1.2.3"
             exit 1
           fi
-          echo "Valid version: $VERSION"
 
       - name: Load SSH key into agent
         uses: webfactory/ssh-agent@v0.9.0
@@ -526,15 +454,7 @@ jobs:
           payload: |
             {
               "text": "Production deployment successful",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*PRODUCTION DEPLOYMENT SUCCESS*\nVersion: *${{ github.event.inputs.version }}*\nBy: ${{ github.actor }}"
-                  }
-                }
-              ]
+              "blocks": [{"type":"section","text":{"type":"mrkdwn","text":"*PRODUCTION DEPLOYMENT SUCCESS*\nVersion: *${{ github.event.inputs.version }}*\nBy: ${{ github.actor }}"}}]
             }
 
       - name: Slack Failure Notification
@@ -545,13 +465,5 @@ jobs:
           payload: |
             {
               "text": "Production deployment FAILED",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*PRODUCTION DEPLOYMENT FAILED*\nVersion: *${{ github.event.inputs.version }}*\nBy: ${{ github.actor }}\nREQUIRES IMMEDIATE ATTENTION"
-                  }
-                }
-              ]
+              "blocks": [{"type":"section","text":{"type":"mrkdwn","text":"*PRODUCTION DEPLOYMENT FAILED*\nVersion: *${{ github.event.inputs.version }}*\nBy: ${{ github.actor }}\nREQUIRES IMMEDIATE ATTENTION"}}]
             }

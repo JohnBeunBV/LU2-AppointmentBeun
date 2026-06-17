@@ -87,6 +87,7 @@ jobs:
         run: |
           mvn sonar:sonar \
             -Dsonar.projectKey=${{ github.repository }} \
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true

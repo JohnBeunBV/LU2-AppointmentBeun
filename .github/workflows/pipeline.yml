@@ -86,7 +86,7 @@ jobs:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
         run: |
           mvn sonar:sonar \
-            -Dsonar.projectKey=${{ github.repository }} \
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \

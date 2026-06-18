@@ -93,6 +93,16 @@ jobs:
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.qualitygate.wait=true
 
+      - name: Debug - check .snyk file
+        working-directory: openmrs-module-appointmentscheduling
+        run: |
+          echo "=== .snyk file exists? ==="
+          ls -la .snyk || echo "NIET GEVONDEN"
+          echo "=== Contents ==="
+          cat .snyk || echo "KAN NIET LEZEN"
+          echo "=== Snyk version ==="
+          snyk --version
+
       # ── SCA: Snyk dependency vulnerability scan ──────────────────────────────
       # Mitigeert: CICD-05 | NEN-7510: 8.8 (kwetsbaarheidsbeheer dependencies)
       # Run via CLI so working-directory is respected (snyk/actions ignores it).

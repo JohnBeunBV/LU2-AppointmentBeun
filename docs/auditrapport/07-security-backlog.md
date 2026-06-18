@@ -47,7 +47,7 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 | --- | ------------------------------------------------------------ | :---: | --------- | ------- | ------------ | -------- | -------- |
 | R01 | PII in logbestanden                                          |  25   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.15   | Dev-team |
 | R02 | Hardcoded credentials in broncode                            |  20   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.9.2    | Dev-team |
-| R03 | Geen data-level ACL                                          |  16   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.8.3    | Dev-team |
+| R03 | Geen data-level ACL                                          |  16   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.3    | Dev-team |
 | R04 | Typfouten in privilege-constanten                            |  15   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.3    | Dev-team |
 | R05 | Lege `@Authorized()` op servicemethoden                      |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.3    | Dev-team |
 | R07 | Geen auditlogging voor afspraakmutaties                      |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.15   | Dev-team |

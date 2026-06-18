@@ -1,4 +1,4 @@
-# 12 CI/CD Bow-tie Analyse: Gecompromitteerde CI/CD Pipeline - OpenMRS Appointment Scheduler
+# 10 CI/CD Bow-tie Analyse: Gecompromitteerde CI/CD Pipeline - OpenMRS Appointment Scheduler
 
 **Sprint:** 2  
 **Taak:** SOF-36: Risicomatrix & bow-tie CI/CD-proces  

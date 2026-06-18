@@ -26,9 +26,9 @@ public class AppointmentUtils {
 
     public static final String PRIV_REQUEST_APPOINTMENTS = "Request Appointments";
 
-	public static final String PRIV_VIEW_PROVIDER_SCHEDULES = "View Provider Scedules";
+	public static final String PRIV_VIEW_PROVIDER_SCHEDULES = "View Provider Schedules";
 
-	public static final String PRIV_MANAGE_PROVIDER_SCHEDULES = "Manage Provider Scedules";
+	public static final String PRIV_MANAGE_PROVIDER_SCHEDULES = "Manage Provider Schedules";
 
 	//Global Properties
 	

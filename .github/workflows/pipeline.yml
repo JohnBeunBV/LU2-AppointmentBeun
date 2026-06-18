@@ -104,6 +104,7 @@ jobs:
       - name: Snyk SCA Scan
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        working-directory: openmrs-module-appointmentscheduling
         run: |
           snyk test \
             --maven-aggregate-project \

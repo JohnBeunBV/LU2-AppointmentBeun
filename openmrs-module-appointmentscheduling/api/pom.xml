@@ -34,6 +34,11 @@
         <artifactId>reporting-api</artifactId>
     </dependency>
 
+	<dependency>
+    <groupId>org.openmrs.module</groupId>
+    <artifactId>calculation-api</artifactId>
+	</dependency>
+
 	</dependencies>
 
 	<build>

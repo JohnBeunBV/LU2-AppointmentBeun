@@ -106,9 +106,9 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           snyk test \
+            --maven-aggregate-project \
             --severity-threshold=high \
             --sarif-file-output=snyk.sarif \
-            --all-projects \
             --json-file-output=snyk-sca.json
 
       - name: Upload Snyk SARIF to GitHub Security tab

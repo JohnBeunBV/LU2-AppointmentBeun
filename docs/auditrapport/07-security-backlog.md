@@ -40,12 +40,12 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 
 | ID  | Bevinding                                                    | Score | Zone      | Status  | Prioriteit   | NEN-7510 | Eigenaar |
 | --- | ------------------------------------------------------------ | :---: | --------- | ------- | ------------ | -------- | -------- |
-| R01 | PII in logbestanden                                          |  25   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.8.15   | Dev-team |
+| R01 | PII in logbestanden                                          |  25   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.15   | Dev-team |
 | R02 | Hardcoded credentials in broncode                            |  20   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.9.2    | Dev-team |
 | R03 | Geen data-level ACL                                          |  16   | 🔴 Rood   | 🔴 Open | P1 — Kritiek | A.8.3    | Dev-team |
 | R04 | Typfouten in privilege-constanten                            |  15   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.3    | Dev-team |
 | R05 | Lege `@Authorized()` op servicemethoden                      |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.3    | Dev-team |
-| R07 | Geen auditlogging voor afspraakmutaties                      |  12   | 🟠 Oranje | 🔴 Open | P2 — Hoog    | A.8.15   | Dev-team |
+| R07 | Geen auditlogging voor afspraakmutaties                      |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.15   | Dev-team |
 | R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet    |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
 | R09 | `ConcurrentModificationException` in `cleanOpenAppointments` |   9   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
 
@@ -61,6 +61,38 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 ---
 
 ## 4. Gedetailleerde acties per in-scope bevinding
+
+---
+
+### R13 — HQL-injectie in `searchAppointmentsByPatientName`
+
+**Bestand:** `api/src/main/java/.../api/db/hibernate/HibernateAppointmentDAO.java`, regel 317
+
+**Probleem:**
+
+```java
+// VULNERABILITY: SQL injection - patientName is concatenated directly into query
+String hql = "from Appointment ap where ap.visit.patient.personName.givenName = '"
+    + patientName + "' or ap.visit.patient.personName.familyName = '" + patientName + "'";
+return super.sessionFactory.getCurrentSession().createQuery(hql).list();
+```
+
+`patientName` wordt zonder parameterisatie in de HQL-query geconcateneerd. De methode is momenteel **dode code** (niet aangesloten op enig endpoint), maar de kwetsbaarheid is gedocumenteerd en moet worden opgelost.
+
+**Actie:** Vervang string-concatenatie door `.setParameter()`:
+
+```java
+String hql = "from Appointment ap where ap.visit.patient.personName.givenName = :name"
+           + " or ap.visit.patient.personName.familyName = :name";
+return super.sessionFactory.getCurrentSession()
+    .createQuery(hql)
+    .setParameter("name", patientName)
+    .list();
+```
+
+**Acceptatiecriterium:** Geen string-concatenatie meer in HQL/SQL-queries. Gevalideerd door code-review en grep-check in CI.
+
+**Restrisico na fix:** Laag — methode is momenteel niet bereikbaar; na fix ook bij aansluiting veilig.
 
 ---
 
@@ -375,8 +407,8 @@ De onderstaande bevindingen zijn geïdentificeerd maar vallen buiten de scope va
 
 | Prioriteit        | Bevindingen                          | Aanpak                      |
 | ----------------- | ------------------------------------ | --------------------------- |
-| P1 — Kritiek (🔴) | R01, R02, R03, R04, CICD-03, CICD-04 | Oplossen in huidige sprint  |
-| P2 — Hoog (🟠)    | R05, R07, R09, R11, CICD-05          | Oplossen in volgende sprint |
+| P1 — Kritiek (🔴) | ~~R01~~, R02, R03, R04, CICD-03, CICD-04 | R01 ✅ opgelost; overige oplossen in huidige sprint |
+| P2 — Hoog (🟠)    | R05, ~~R07~~, R09, R11, R13, CICD-05     | R07 ✅ opgelost; overige oplossen in volgende sprint |
 | P3 — Midden (🟡)  | CICD-06                              | Oplossen binnen 2 sprints   |
 
 ### Buiten scope — gedocumenteerd

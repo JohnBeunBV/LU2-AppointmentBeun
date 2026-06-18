@@ -54,7 +54,7 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 | R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet    |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
 | R09 | `ConcurrentModificationException` in `cleanOpenAppointments` |   9   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
 | R13 | HQL-injectie in `searchAppointmentsByPatientName`            |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Midden  | A.8.24   | Dev-team |
-| **R14** | **SQL Injection via gebruikersinvoer of opgeslagen data**    | **15** | **🔴 Rood** | **🔴 Open** | **P2 — Hoog** | **A.8.24** | **Dev-team** |
+| **R14** | **SQL Injection via gebruikersinvoer of opgeslagen data**    | **15** | **🔴 Rood** | **✅ Opgelost** | **P2 — Hoog** | **A.8.24** | **Dev-team** |
 
 > **Toelichting R14-prioriteit:** Hoewel de score (15) in de rode zone valt en gelijkstaat aan R04, is R14 als P2 geclassificeerd omdat Hibernate ORM een baseline-bescherming biedt via HQL en de kwetsbaarheid nog niet pinpoint gelokaliseerd is in een specifiek codepad. Verificatie en codeaudit zijn de eerste stap. Mocht de audit een concreet onbeveiligd codepad blootleggen, wordt de prioriteit bijgesteld naar P1.
 

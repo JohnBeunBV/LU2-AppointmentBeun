@@ -12,6 +12,20 @@
 	<name>Appointment Scheduling Module API</name>
 	<description>API project for Appointment Scheduling</description>
 
+	<dependencies>
+
+    <dependency>
+        <groupId>org.openmrs.api</groupId>
+        <artifactId>openmrs-api</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.openmrs.web</groupId>
+        <artifactId>openmrs-web</artifactId>
+    </dependency>
+
+	</dependencies>
+
 	<build>
 		<!--<plugins>-->
             <!--<plugin>-->

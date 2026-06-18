@@ -108,9 +108,6 @@ jobs:
       # Run via CLI so working-directory is respected (snyk/actions ignores it).
       # Scans all projects including transitive OpenMRS module dependencies.
       # False positives: voeg toe aan .snyk met vervaldatum en onderbouwing.
-      - name: Install Snyk CLI
-        run: npm install -g snyk
-
       - name: Snyk SCA Scan
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -120,8 +117,15 @@ jobs:
             --all-projects \
             --severity-threshold=high \
             --policy-path=$(pwd)/.snyk \
-            --print-deps \
-            2>&1 | head -50
+            --sarif-file-output=snyk.sarif \
+            --json-file-output=snyk-sca.json || true
+
+      - name: Upload Snyk SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: openmrs-module-appointmentscheduling/snyk.sarif
+        continue-on-error: true
 
       - name: Upload Snyk SARIF to GitHub Security tab
         if: always()

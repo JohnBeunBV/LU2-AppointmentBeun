@@ -60,6 +60,11 @@
 		<scope>test</scope>
 	</dependency>
 
+	<dependency>
+    <groupId>org.openmrs.module</groupId>
+    <artifactId>serialization.xstream-api</artifactId>
+	</dependency>
+
 	</dependencies>
 
 	<build>

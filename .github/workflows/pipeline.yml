@@ -108,6 +108,9 @@ jobs:
       # Run via CLI so working-directory is respected (snyk/actions ignores it).
       # Scans all projects including transitive OpenMRS module dependencies.
       # False positives: voeg toe aan .snyk met vervaldatum en onderbouwing.
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
       - name: Snyk SCA Scan
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

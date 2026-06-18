@@ -46,8 +46,8 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 | R04 | Typfouten in privilege-constanten                            |  15   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.3    | Dev-team |
 | R05 | Lege `@Authorized()` op servicemethoden                      |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.3    | Dev-team |
 | R07 | Geen auditlogging voor afspraakmutaties                      |  12   | 🟠 Oranje | 🔴 Open | P2 — Hoog    | A.8.15   | Dev-team |
-| R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet    |  12   | 🟠 Oranje | 🔴 Open | P2 — Hoog    | A.8.6    | Dev-team |
-| R09 | `ConcurrentModificationException` in `cleanOpenAppointments` |   9   | 🟠 Oranje | 🔴 Open | P2 — Hoog    | A.8.6    | Dev-team |
+| R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet    |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
+| R09 | `ConcurrentModificationException` in `cleanOpenAppointments` |   9   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
 
 ### 3.2 CI/CD pipeline bevindingen
 

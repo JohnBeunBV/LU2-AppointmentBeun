@@ -1,4 +1,4 @@
-# 10 Risico-evaluatie CI/CD Proces - OpenMRS Appointment Scheduler
+# 8 Risico-evaluatie CI/CD Proces - OpenMRS Appointment Scheduler
 
 **Sprint:** 2  
 **Taak:** SOF-36: Risicomatrix & bow-tie CI/CD-proces  

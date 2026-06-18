@@ -1,11 +1,16 @@
-# 09 Security Backlog - OpenMRS Appointment Scheduler
+# 07 Security Backlog - OpenMRS Appointment Scheduler
 
-**Sprint:** 2
-**Taak:** SOF-38: Security backlog
-**Module:** OpenMRS Appointment Scheduler  
-**Versie:** 1
-**Datum:** Juni 2026
+**Sprint:** 3
+**Taak:** SOF-42: Threat model uitbreiding + security backlog bijwerken
+**Module:** OpenMRS Appointment Scheduler
+**Versie:** 2
 **Norm:** NEN-7510:2024
+
+> **Wijzigingen t.o.v. versie 1 (SOF-38):**
+>
+> - R14 (SQL Injection) toegevoegd als nieuwe P2-bevinding vanuit threat modelling sessie SOF-42
+> - CICD-03, CICD-04, CICD-05 bijgewerkt naar status ✅ Opgelost (sprint 2)
+> - CICD-07, CICD-10 bijgewerkt naar ✅ Opgelost
 
 ---
 
@@ -48,15 +53,18 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 | R07 | Geen auditlogging voor afspraakmutaties                      |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.15   | Dev-team |
 | R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet    |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
 | R09 | `ConcurrentModificationException` in `cleanOpenAppointments` |   9   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
+| **R14** | **SQL Injection via gebruikersinvoer of opgeslagen data**    | **15** | **🔴 Rood** | **🔴 Open** | **P2 — Hoog** | **A.8.24** | **Dev-team** |
+
+> **Toelichting R14-prioriteit:** Hoewel de score (15) in de rode zone valt en gelijkstaat aan R04, is R14 als P2 geclassificeerd omdat Hibernate ORM een baseline-bescherming biedt via HQL en de kwetsbaarheid nog niet pinpoint gelokaliseerd is in een specifiek codepad. Verificatie en codeaudit zijn de eerste stap. Mocht de audit een concreet onbeveiligd codepad blootleggen, wordt de prioriteit bijgesteld naar P1.
 
 ### 3.2 CI/CD pipeline bevindingen
 
-| ID      | Bevinding                                              | Score | Zone      | Status            | Prioriteit   | NEN-7510 | Eigenaar |
-| ------- | ------------------------------------------------------ | :---: | --------- | ----------------- | ------------ | -------- | -------- |
-| CICD-03 | `continue-on-error` SonarQube — SAST blokkeert nooit   |  20   | 🔴 Rood   | 🟡 In behandeling | P1 — Kritiek | A.8.25   | Dev-team |
-| CICD-04 | Geen geheimscanner (gitleaks) in pipeline              |  20   | 🔴 Rood   | 🟡 In behandeling | P1 — Kritiek | A.8.25   | Dev-team |
-| CICD-05 | Geen SCA / CVE-scan op dependencies en container image |  16   | 🟠 Oranje | 🟡 In behandeling | P2 — Hoog    | A.8.8    | Dev-team |
-| CICD-06 | Niet-gepinde GitHub Actions (`@v4`, `@v6`)             |  10   | 🟡 Geel   | 📋 Gepland        | P3 — Midden  | A.8.9    | Dev-team |
+| ID      | Bevinding                                              | Score | Zone      | Status      | Prioriteit   | NEN-7510 | Eigenaar |
+| ------- | ------------------------------------------------------ | :---: | --------- | ----------- | ------------ | -------- | -------- |
+| CICD-03 | `continue-on-error` SonarQube — SAST blokkeert nooit   |  20   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.25   | Dev-team |
+| CICD-04 | Geen geheimscanner (gitleaks) in pipeline              |  20   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.25   | Dev-team |
+| CICD-05 | Geen SCA / CVE-scan op dependencies en container image |  16   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.8    | Dev-team |
+| CICD-06 | Niet-gepinde GitHub Actions (`@v4`, `@v6`)             |  10   | 🟡 Geel   | 📋 Gepland  | P3 — Midden  | A.8.9    | Dev-team |
 
 ---
 
@@ -93,6 +101,119 @@ return super.sessionFactory.getCurrentSession()
 **Acceptatiecriterium:** Geen string-concatenatie meer in HQL/SQL-queries. Gevalideerd door code-review en grep-check in CI.
 
 **Restrisico na fix:** Laag — methode is momenteel niet bereikbaar; na fix ook bij aansluiting veilig.
+
+---
+
+### R14 — SQL Injection via gebruikersinvoer of opgeslagen data
+
+**Bron:** Threat modelling sessie SOF-42
+**NEN-7510:** A.8.24 (Gebruik van veilige coderingspraktijken)
+**OWASP:** A03:2021 — Injection
+
+**Achtergrond:**
+
+SQL injection omvat twee hoofdvarianten die beide relevant zijn voor de Appointment Scheduler:
+
+- **Directe injectie:** Kwaadaardige code wordt ingevoegd in gebruikersinvoer die direct wordt doorgegeven aan een SQL-query.
+- **Second-order injectie:** Kwaadaardige strings worden eerst opgeslagen als valide data en later pas uitgevoerd wanneer ze worden samengevoegd in een dynamische SQL-opdracht — bijvoorbeeld in een rapportage- of exportroutine.
+
+De second-order variant is extra relevant in combinatie met R02: de HL7-exportroutine in `AppointmentActivator.java` maakt verbinding met een externe rapportagedatabase via hardcoded credentials. Als opgeslagen data ongesaniteerd wordt doorgegeven aan die exportquery, is de aanvalsoppervlakte groter dan de module zelf.
+
+**Te auditen locaties (prioriteitsvolgorde):**
+
+| Locatie                                         | Reden                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| `HibernateAppointmentDAO.java`                  | Primaire DAO-laag; native queries mogelijk naast HQL               |
+| `AppointmentActivator.java` (HL7-exportroutine) | Maakt verbinding met externe database; mogelijk dynamische queries |
+| `DWRAppointmentService.java`                    | Ontvangt browser-input; minder zichtbaar dan REST                  |
+| `AppointmentServiceImpl.java`                   | HQL-criteria; controleer op `createQuery()` met concatenatie       |
+| Spring MVC controllers (`web/controller/`)      | Formulierinvoer die doorstroomt naar service- of DAO-laag          |
+
+**Actie (gefaseerd):**
+
+**Fase 1 — Codeaudit (direct):**
+
+```bash
+# Zoek naar potentieel onveilige queryopbouw in de codebase:
+grep -rn "createNativeQuery\|createQuery.*+" --include="*.java" .
+grep -rn "\"SELECT\|\"INSERT\|\"UPDATE\|\"DELETE" --include="*.java" .
+grep -rn "\.append.*sql\|sql.*\+" --include="*.java" .
+```
+
+**Fase 2 — Fix onveilige queries:**
+
+```java
+// ❌ Onveilig — stringconcatenatie in query:
+String hql = "FROM Appointment WHERE patientId = '" + patientId + "'";
+Query query = session.createQuery(hql);
+
+// ✅ Veilig — named parameter:
+Query query = session.createQuery(
+    "FROM Appointment WHERE patientId = :patientId");
+query.setParameter("patientId", patientId);
+```
+
+```java
+// ❌ Onveilig — native query met concatenatie:
+session.createNativeQuery(
+    "SELECT * FROM appointment WHERE notes LIKE '%" + userInput + "%'");
+
+// ✅ Veilig — geparametriseerde native query:
+session.createNativeQuery(
+    "SELECT * FROM appointment WHERE notes LIKE :search")
+    .setParameter("search", "%" + userInput + "%");
+```
+
+**Fase 3 — Invoervalidatie als extra verdedigingslaag:**
+
+Voeg validatie toe in de controller- en service-laag, ongeacht het ORM-framework. OpenMRS biedt `ValidateUtil` en de `AppointmentTypeValidator` als basis; breid deze uit:
+
+```java
+// Voorbeeld: weiger invoer met SQL-metakarakters waar vrije tekst niet verwacht wordt
+if (input != null && input.matches(".*[;'\"\\\\--].*")) {
+    throw new APIException("Ongeldige invoer gedetecteerd");
+}
+```
+
+**Fase 4 — Geautomatiseerde test:**
+
+Voeg een integratietest toe die SQL-injectiepayloads als invoer verzendt:
+
+```java
+@Test
+public void sqlInjectionPayloadShouldNotCauseException() {
+    String[] payloads = {
+        "' OR '1'='1",
+        "'; DROP TABLE appointment; --",
+        "1' UNION SELECT * FROM users --",
+        "admin'--"
+    };
+    for (String payload : payloads) {
+        // Verwacht: lege resultatenlijst of validatiefout — GEEN SQLException
+        assertDoesNotThrow(() ->
+            appointmentService.getAppointmentsByNote(payload));
+    }
+}
+```
+
+**Acceptatiecriteria:**
+
+| Criterium                                                                                 | Verificatie                                         |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Geen `createQuery()` of `createNativeQuery()` met stringconcatenatie van gebruikersinvoer | grep-check in CI-pipeline                           |
+| Alle DAO-methoden gebruiken `setParameter()` of typed criteria                            | Code review + Hibernate SQL-logging in testomgeving |
+| SQL-injectie-integratietest slaagt zonder `SQLException`                                  | Automatische test in CI                             |
+| HL7-exportroutine gebruikt geen dynamische queryopbouw                                    | Handmatige code review `AppointmentActivator.java`  |
+
+**Restrisico na fix:** Laag — mits alle query-entry points geparametriseerd zijn. ORM-gebruik (Hibernate) biedt al een baseline; het restrisico zit in native queries en de HL7-exportroutine buiten de ORM-laag.
+
+**Relatie met andere risico's:**
+
+| Risico                      | Relatie                                                                                                     |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| R02 (Hardcoded credentials) | Een succesvolle SQL-injectie via de HL7-exportroutine heeft direct toegang tot de externe database door R02 |
+| R03 (Geen data-level ACL)   | SQL-injectie kan de IDOR-bescherming volledig omzeilen door data-filtering in de query te manipuleren       |
+| R01 (PII-logging)           | Een aanvaller die SQL-injectie combineert met de loggingkwetsbaarheid kan gericht PII exfiltreren           |
 
 ---
 
@@ -171,35 +292,17 @@ if (!currentUser.hasRole("System Developer") &&
 
 **Acceptatiecriterium:** Integratietest bewijst dat gebruiker A geen afspraken van patiënt B kan opvragen tenzij gebruiker A behandelaar is van patiënt B.
 
-**Restrisico na fix:** Midden — roldefinitie en "behandelaarrelatie" zijn afhankelijk van correcte OpenMRS-gebruikersbeheerinrichting buiten de module.
-
 ---
 
 ### R04 — Typfouten in privilege-constanten
 
 **Bestand:** `api/src/main/java/.../AppointmentUtils.java`, regels 29–31
 
-**Probleem:**
-
-```java
-public static final String PRIV_VIEW_PROVIDER_SCHEDULES   = "View Provider Scedules";   // ❌
-public static final String PRIV_MANAGE_PROVIDER_SCHEDULES = "Manage Provider Scedules"; // ❌
-```
-
 **Actie:** Herstel de spelling en voeg een test toe:
 
 ```java
 public static final String PRIV_VIEW_PROVIDER_SCHEDULES   = "View Provider Schedules";   // ✅
 public static final String PRIV_MANAGE_PROVIDER_SCHEDULES = "Manage Provider Schedules"; // ✅
-```
-
-Voeg ook een test toe die verifieert dat elke privilege-constante in `AppointmentUtils` overeenkomt met een `<privilege>`-registratie in `config.xml`:
-
-```java
-@Test
-public void allPrivilegeConstantsShouldBeRegisteredInConfig() {
-    // laad config.xml, vergelijk alle PRIV_* constanten
-}
 ```
 
 **Acceptatiecriterium:** Test slaagt; privilege-checks voor provider-roosters werken correct in integratie.
@@ -210,21 +313,15 @@ public void allPrivilegeConstantsShouldBeRegisteredInConfig() {
 
 **Bestand:** `api/src/main/java/.../api/AppointmentService.java`
 
-**Probleem:** `getAllProviderSchedules()` en `getProviderScheduleByUuid()` hebben `@Authorized()` zonder privilege-argument, waardoor elke gebruiker ze kan aanroepen.
-
 **Actie:**
 
 ```java
-// Voor:
-@Authorized()
-List<ProviderSchedule> getAllProviderSchedules();
-
 // Na:
 @Authorized(AppointmentUtils.PRIV_VIEW_PROVIDER_SCHEDULES)
 List<ProviderSchedule> getAllProviderSchedules();
 ```
 
-**Acceptatiecriterium:** Een gebruiker zonder het `View Provider Schedules`-privilege krijgt een `APIAuthenticationException` bij het aanroepen van deze methoden.
+**Acceptatiecriterium:** Een gebruiker zonder het `View Provider Schedules`-privilege krijgt een `APIAuthenticationException`.
 
 ---
 
@@ -232,29 +329,16 @@ List<ProviderSchedule> getAllProviderSchedules();
 
 **Bestand:** `api/src/main/java/.../api/impl/AppointmentServiceImpl.java`
 
-**Probleem:** `saveAppointment()`, `voidAppointment()`, `cancelAppointment()` en `changeMatchingAppointment()` loggen geen gestructureerde auditinformatie.
-
-**Actie:** Voeg een gestructureerd auditlog toe op service-methode niveau. Gebruik uitsluitend UUID's — geen PII:
+**Actie:** Voeg gestructureerd auditlog toe op mutatiemethoden — uitsluitend met UUID's, geen PII:
 
 ```java
-// Voorbeeld voor saveAppointment:
 log.info("[AUDIT] appointment.save | user={} | appointmentUuid={} | action={}",
     Context.getAuthenticatedUser().getUuid(),
     appointment.getUuid(),
     appointment.getId() == null ? "CREATE" : "UPDATE");
 ```
 
-**Minimum te loggen velden per mutatie:**
-
-| Veld           | Voorbeeld                                     |
-| -------------- | --------------------------------------------- |
-| Tijdstip       | automatisch via logging framework             |
-| Gebruiker UUID | `Context.getAuthenticatedUser().getUuid()`    |
-| Actie          | CREATE / UPDATE / VOID / CANCEL / RETIRE      |
-| Resource type  | `Appointment`, `AppointmentBlock`, `TimeSlot` |
-| Resource UUID  | `object.getUuid()`                            |
-
-**Acceptatiecriterium:** Na elke mutatie-aanroep verschijnt een `[AUDIT]`-regel in de log zonder PII. Gevalideerd door unit test.
+**Acceptatiecriterium:** Na elke mutatie-aanroep verschijnt een `[AUDIT]`-regel in de log zonder PII.
 
 ---
 
@@ -262,18 +346,9 @@ log.info("[AUDIT] appointment.save | user={} | appointmentUuid={} | action={}",
 
 **Bestand:** `api/src/main/java/.../api/impl/AppointmentServiceImpl.java`, regels 961–988
 
-**Probleem:** Elementen worden verwijderd via `list.remove(item)` terwijl een `Iterator` actief is over dezelfde lijst.
-
-**Actie:** Vervang de directe verwijdering door `iterator.remove()`:
+**Actie:**
 
 ```java
-// Voor:
-for (Appointment appointment : appointmentsInStates) {
-    if (shouldRemove(appointment)) {
-        appointmentsInStates.remove(appointment); // ❌ ConcurrentModificationException
-    }
-}
-
 // Na (optie A — iterator.remove):
 Iterator<Appointment> it = appointmentsInStates.iterator();
 while (it.hasNext()) {
@@ -282,12 +357,6 @@ while (it.hasNext()) {
         it.remove(); // ✅
     }
 }
-
-// Na (optie B — collect-then-remove):
-List<Appointment> toRemove = appointmentsInStates.stream()
-    .filter(this::shouldRemove)
-    .collect(Collectors.toList());
-appointmentsInStates.removeAll(toRemove); // ✅
 ```
 
 **Acceptatiecriterium:** Unit test dekt het scenario waarbij een afspraak wordt opgeruimd zonder exception.
@@ -298,16 +367,14 @@ appointmentsInStates.removeAll(toRemove); // ✅
 
 **Bestand:** `api/src/main/java/.../api/impl/AppointmentServiceImpl.java`
 
-**Probleem:** Vier methoden slaan op zonder de bijbehorende status-vlag te zetten:
+**Actie:** Voeg de vlagzetting toe vóór elke `save`-aanroep:
 
-| Methode                                | Ontbrekende actie                                                 |
+| Methode                                | Toe te voegen actie                                               |
 | -------------------------------------- | ----------------------------------------------------------------- |
 | `retireAppointmentType(type, reason)`  | `type.setRetired(true); type.setRetireReason(reason);`            |
 | `voidAppointment(appointment, reason)` | `appointment.setVoided(true); appointment.setVoidReason(reason);` |
 | `voidTimeSlot(timeSlot, reason)`       | `timeSlot.setVoided(true); timeSlot.setVoidReason(reason);`       |
 | `voidAppointmentBlock(block, reason)`  | `block.setVoided(true); block.setVoidReason(reason);`             |
-
-**Actie:** Voeg de vlagzetting toe vóór elke `save`-aanroep in elk van de vier methoden.
 
 **Acceptatiecriterium:** Unit tests bewijzen dat na aanroep van elke methode de vlag `true` is en de reden is opgeslagen.
 
@@ -315,49 +382,33 @@ appointmentsInStates.removeAll(toRemove); // ✅
 
 ### CICD-03 — SonarQube `continue-on-error` verwijderd
 
-**Bestand:** `.github/workflows/pipeline.yml`
+**Status: ✅ Opgelost in sprint 2**
 
-**Probleem:** `continue-on-error: true` op de SonarQube-stap maakt de SAST-controle decoratief.
-
-**Actie:** ✅ Reeds geïmplementeerd in sprint 2 — pipeline is opgesplitst:
-
-- `develop` branch: `continue-on-error: true` (waarschuwing)
-- `release/*` en `main`: geen `continue-on-error` (hard gate)
-
-**Acceptatiecriterium:** Een mislukt quality gate op `release/*` blokkeert de build en voorkomt deploy naar acceptatie.
+Pipeline opgesplitst: `develop` gebruikt `continue-on-error: true`; `release/*` en `main` hebben een hard gate zonder `continue-on-error`.
 
 ---
 
 ### CICD-04 — Gitleaks secret scanning toegevoegd
 
-**Bestand:** `.github/workflows/pipeline.yml`
+**Status: ✅ Opgelost in sprint 2**
 
-**Actie:** ✅ Reeds geïmplementeerd in sprint 2 — `secret-scan` job toegevoegd als eerste job; `build-and-test` is afhankelijk van `secret-scan`.
-
-**Acceptatiecriterium:** Een commit met een hardcoded wachtwoord blokkeert de pipeline bij de `secret-scan`-stap voordat `build-and-test` start.
-
-**Suppression-proces:** Zie `.gitleaks.toml` en `docs/auditrapport/10-cicd-risico-evaluatie.md` §5.
+`secret-scan` job is de eerste job in de pipeline; `build-and-test` is hiervan afhankelijk.
 
 ---
 
 ### CICD-05 — SCA / CVE-scan toegevoegd (OWASP + Trivy)
 
-**Bestand:** `.github/workflows/pipeline.yml`
+**Status: ✅ Opgelost in sprint 2**
 
-**Actie:** ✅ Reeds geïmplementeerd in sprint 2:
-
-- OWASP Dependency Check op Maven-dependencies (`mvn dependency-check:check`, blokkeert bij CVSS ≥ 7)
-- Trivy container image scan (blokkeert bij CRITICAL/HIGH op `release/*` en `main`)
-
-**Suppression-proces:** Zie `owasp/suppressions.xml`, `.trivyignore` en `docs/auditrapport/10-cicd-risico-evaluatie.md` §5.
+OWASP Dependency Check op Maven-dependencies (blokkeert bij CVSS ≥ 7); Trivy container image scan (blokkeert bij CRITICAL/HIGH op `release/*` en `main`).
 
 ---
 
 ### CICD-06 — Niet-gepinde GitHub Actions
 
-**Bestand:** `.github/workflows/pipeline.yml`
+**Status: 📋 Gepland (sprint 4)**
 
-**Actie (gepland, volgende sprint):** Pin alle externe Actions op volledige SHA-hashes in plaats van floating tags:
+**Actie:** Pin alle externe Actions op volledige SHA-hashes:
 
 | Huidige tag                        | Te pinnen SHA (voorbeeld)                                               |
 | ---------------------------------- | ----------------------------------------------------------------------- |
@@ -377,27 +428,25 @@ appointmentsInStates.removeAll(toRemove); // ✅
 
 ## 5. Buiten scope — Bewust uitgesloten bevindingen
 
-De onderstaande bevindingen zijn geïdentificeerd maar vallen buiten de scope van dit project. Ze zijn gedocumenteerd zodat een toekomstige eigenaar of opdrachtgever ze kan oppakken.
-
-| ID       | Bevinding                                           | Score  | Reden buiten scope                                                                                                                                                                                                                 | Aanbeveling                                                                                                       |
-| -------- | --------------------------------------------------- | :----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| R06      | Geen MFA op OpenMRS-instantie                       |   12   | MFA is een OpenMRS-platforminstelling, niet configureerbaar vanuit de module. Verantwoordelijkheid van de systeembeheerder van de zorginstelling.                                                                                  | Stel in de OpenMRS-beheerinterface "Require 2FA" in; gebruik een OAuth2/SAML identity provider.                   |
-| R08      | Geen brute-force beveiliging                        |   12   | Account lockout en rate limiting zijn OpenMRS core-functionaliteit en reverse proxy-instellingen. Buiten de scope van de module-code.                                                                                              | Configureer account lockout in OpenMRS runtime properties; voeg IP-rate limiting toe op nginx/Apache.             |
-| R10      | Gebruik van deprecated `Date`-API                   |   6    | Technische schuld met laag beveiligingsrisico (score 6). Betreft uitsluitend onderhoudbaarheid. Geen directe patiëntdatablootstelling.                                                                                             | Migreer naar `java.time` bij een Java-versie-upgrade; opnemen in technische-schuld-backlog.                       |
-| R12      | Ongebruikte variabele `satisfyingConstraints`       |   2    | Score 2 — verwaarloosbaar risico. Betreft codekwaliteit, geen beveiligingsimpact.                                                                                                                                                  | Verwijder de variabele bij een volgende code-review.                                                              |
-| CICD-01  | GitHub beheerderaccount gecompromitteerd            |   15   | MFA-afdwinging op GitHub-organisatieniveau is een beheerderstaak op GitHub-organisatieniveau, buiten de module-scope. Het team kan dit niet zelf afdwingen zonder organisatiebeheerderrechten.                                     | Stel MFA verplicht via GitHub Org → Settings → Authentication → Require 2FA voor alle members.                    |
-| CICD-02  | GitHub Secrets gelekt via logs                      |   15   | Secretbeheer en rotatieschema zijn een GitHub-organisatie- en DevOps-verantwoordelijkheid. De pipeline-code zelf is aangepast (SSH-agent i.p.v. echo naar schijf).                                                                 | Stel een secrets-rotatieschema in; gebruik OIDC voor cloud-deployments als alternatief voor SSH keys.             |
-| CICD-07  | SSH private key tijdelijk op runner-schijf          |   12   | ✅ Reeds gemitigeerd in sprint 2 via `webfactory/ssh-agent` — key staat niet meer op schijf. Restrisico is geaccepteerd.                                                                                                           | —                                                                                                                 |
-| CICD-08  | Geen geformaliseerde rollback procedure             |   15   | ✅ Gedeeltelijk gemitigeerd in sprint 2: automatische rollback toegevoegd aan `deploy-prod` bij health check failure. Geen volledige blue-green strategie — buiten scope van huidige sprint door serverinfrastructuur-beperkingen. | Implementeer blue-green deployment wanneer een tweede productieserver beschikbaar is.                             |
-| CICD-09  | Geen verplichte reviewer voor productie-environment |   15   | GitHub Environment protection rules zijn een GitHub-beheerderstaak. Het team kan environment-settings niet afdwingen vanuit code.                                                                                                  | Stel in GitHub → Environments → production → Required reviewers in met minimaal 1 extra teamlid.                  |
-| CICD-10  | SSH host key TOFU via `ssh-keyscan`                 |   8    | ✅ Gemitigeerd in sprint 2: `ssh-keyscan` vervangen door vaste host key secrets (`*_SSH_KNOWN_HOST`).                                                                                                                              | —                                                                                                                 |
-| CICD-11  | Gedeelde Slack webhook                              |   4    | Score 4 — laag risico. Afsplitsen van webhooks vereist aanpassingen in de Slack-workspace van de opdrachtgever, buiten de module-scope.                                                                                            | Maak separate Slack webhooks aan per omgeving bij volgende Slack workspace review.                                |
-| CICD-13  | Verlies toegang repository-eigenaar                 |   8    | GitHub repository-eigenaarsbeheer is een organisatie-governancekwestie. De module-code kan hier geen invloed op uitoefenen.                                                                                                        | Zorg voor minimaal 2 owners op de GitHub-organisatie; gebruik backup-codes voor MFA.                              |
-| CICD-14  | `main` push triggert productie-deploy               |   15   | In de huidige OTAP-inrichting is `main`-push bedoeld als hotfix-pad. Aanpassen vereist herinrichting van de branching-strategie en GitHub Environment protection rules — buiten scope huidige sprint.                              | Verwijder de `main`-push trigger voor `deploy-prod`; laat productie uitsluitend via `workflow_dispatch` verlopen. |
-| Platform | OpenMRS 1.9.9 EOL + bekende CVE's                   | n.v.t. | OpenMRS platformversie wordt bepaald door de opdrachtgever/zorginstelling. Module-upgrades zijn afhankelijk van platform-compatibiliteit. Buiten directe projectscope.                                                             | Upgrade naar OpenMRS 2.x LTS; neem platformvulnerabilities op in een apart platform-risicoregister.               |
-| Platform | Java 7 runtime (EOL) in Docker                      | n.v.t. | Java 7 is EOL maar technisch vereist door OpenMRS 1.9.9. Upgraden vereist eerst het platform te upgraden. Kip-en-ei-probleem buiten module-scope.                                                                                  | Upgrade platform naar OpenMRS 2.x (Java 8+ compatible) als eerste stap.                                           |
-| Platform | Geen versleuteling at rest database                 | n.v.t. | MySQL-encryptie-inrichting is een server- en DBA-verantwoordelijkheid, niet configureerbaar vanuit de module.                                                                                                                      | Activeer MySQL encryption-at-rest (InnoDB tablespace encryption) op de databaseserver.                            |
-| Platform | HTTP in plaats van HTTPS op test/acceptatie         | n.v.t. | TLS-certificaatbeheer voor test/acceptatieservers is een infrastructuurverantwoordelijkheid. Module-code heeft hier geen invloed op.                                                                                               | Installeer een Let's Encrypt certificaat op test/acceptatieservers; gebruik HTTPS ook voor health checks.         |
+| ID       | Bevinding                                           | Score  | Reden buiten scope                                                                                         | Aanbeveling                                                                                   |
+| -------- | --------------------------------------------------- | :----: | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| R06      | Geen MFA op OpenMRS-instantie                       |   12   | MFA is een OpenMRS-platforminstelling, niet configureerbaar vanuit de module.                              | Stel "Require 2FA" in via de OpenMRS-beheerinterface; gebruik OAuth2/SAML identity provider.  |
+| R08      | Geen brute-force beveiliging                        |   12   | Account lockout en rate limiting zijn OpenMRS core-functionaliteit en reverse proxy-instellingen.          | Configureer lockout in OpenMRS runtime properties; voeg IP-rate limiting toe op nginx/Apache. |
+| R10      | Gebruik van deprecated `Date`-API                   |   6    | Technische schuld met laag beveiligingsrisico. Betreft uitsluitend onderhoudbaarheid.                      | Migreer naar `java.time` bij een Java-versie-upgrade.                                         |
+| R12      | Ongebruikte variabele `satisfyingConstraints`       |   2    | Score 2 — verwaarloosbaar risico. Betreft codekwaliteit, geen beveiligingsimpact.                          | Verwijder de variabele bij een volgende code-review.                                          |
+| CICD-01  | GitHub beheerderaccount gecompromitteerd            |   15   | MFA-afdwinging op GitHub-organisatieniveau is een beheerderstaak buiten de module-scope.                   | Stel MFA verplicht via GitHub Org → Settings → Authentication.                                |
+| CICD-02  | GitHub Secrets gelekt via logs                      |   15   | Secretbeheer en rotatieschema zijn een GitHub-organisatie- en DevOps-verantwoordelijkheid.                 | Stel een secrets-rotatieschema in; gebruik OIDC voor cloud-deployments.                       |
+| CICD-07  | SSH private key tijdelijk op runner-schijf          |   12   | ✅ Gemitigeerd in sprint 2 via `webfactory/ssh-agent`.                                                     | —                                                                                             |
+| CICD-08  | Geen geformaliseerde rollback procedure             |   15   | ✅ Deels gemitigeerd: automatische rollback bij health check failure. Geen volledige blue-green strategie. | Implementeer blue-green deployment bij beschikbaarheid tweede productieserver.                |
+| CICD-09  | Geen verplichte reviewer voor productie-environment |   15   | GitHub Environment protection rules zijn een GitHub-beheerderstaak.                                        | Stel Required reviewers in via GitHub → Environments → production.                            |
+| CICD-10  | SSH host key TOFU via `ssh-keyscan`                 |   8    | ✅ Gemitigeerd in sprint 2: `ssh-keyscan` vervangen door vaste host key secrets.                           | —                                                                                             |
+| CICD-11  | Gedeelde Slack webhook                              |   4    | Score 4 — laag risico. Afsplitsen vereist aanpassingen in de Slack-workspace van de opdrachtgever.         | Maak separate Slack webhooks aan per omgeving bij volgende Slack workspace review.            |
+| CICD-13  | Verlies toegang repository-eigenaar                 |   8    | GitHub repository-eigenaarsbeheer is een organisatie-governancekwestie.                                    | Zorg voor minimaal 2 owners op de GitHub-organisatie.                                         |
+| CICD-14  | `main` push triggert productie-deploy               |   15   | Aanpassen vereist herinrichting van de branching-strategie en GitHub Environment protection rules.         | Verwijder de `main`-push trigger; laat productie uitsluitend via `workflow_dispatch` lopen.   |
+| Platform | OpenMRS 1.9.9 EOL + bekende CVE's                   | n.v.t. | OpenMRS platformversie wordt bepaald door de opdrachtgever/zorginstelling.                                 | Upgrade naar OpenMRS 2.x LTS.                                                                 |
+| Platform | Java 7 runtime (EOL) in Docker                      | n.v.t. | Java 7 is EOL maar technisch vereist door OpenMRS 1.9.9.                                                   | Upgrade platform naar OpenMRS 2.x (Java 8+ compatible) als eerste stap.                       |
+| Platform | Geen versleuteling at rest database                 | n.v.t. | MySQL-encryptie-inrichting is een server- en DBA-verantwoordelijkheid.                                     | Activeer MySQL encryption-at-rest op de databaseserver.                                       |
+| Platform | HTTP in plaats van HTTPS op test/acceptatie         | n.v.t. | TLS-certificaatbeheer voor test/acceptatieservers is een infrastructuurverantwoordelijkheid.               | Installeer een Let's Encrypt certificaat op test/acceptatieservers.                           |
 
 ---
 
@@ -405,11 +454,12 @@ De onderstaande bevindingen zijn geïdentificeerd maar vallen buiten de scope va
 
 ### In scope — te realiseren
 
-| Prioriteit        | Bevindingen                          | Aanpak                      |
-| ----------------- | ------------------------------------ | --------------------------- |
-| P1 — Kritiek (🔴) | ~~R01~~, R02, R03, R04, CICD-03, CICD-04 | R01 ✅ opgelost; overige oplossen in huidige sprint |
-| P2 — Hoog (🟠)    | R05, ~~R07~~, R09, R11, R13, CICD-05     | R07 ✅ opgelost; overige oplossen in volgende sprint |
-| P3 — Midden (🟡)  | CICD-06                              | Oplossen binnen 2 sprints   |
+| Prioriteit        | Bevindingen                                 | Aanpak                      |
+| ----------------- | ------------------------------------------- | --------------------------- |
+| P1 — Kritiek (🔴) | R01, R02, R03, R04                          | Oplossen in huidige sprint  |
+| P2 — Hoog (🟠)    | R05, R07, R09, R11, **R14**                 | Oplossen in volgende sprint |
+| P3 — Midden (🟡)  | CICD-06                                     | Oplossen binnen 2 sprints   |
+| ✅ Opgelost       | CICD-03, CICD-04, CICD-05, CICD-07, CICD-10 | Afgerond in sprint 2        |
 
 ### Buiten scope — gedocumenteerd
 
@@ -422,7 +472,7 @@ De onderstaande bevindingen zijn geïdentificeerd maar vallen buiten de scope va
 
 ### Restrisico na volledige uitvoering
 
-Na implementatie van alle P1-P3 maatregelen resteert een restrisico op:
+Na implementatie van alle P1-P3 maatregelen — inclusief R14 (SQL Injection) — resteert een restrisico op:
 
 - Platformniveau (OpenMRS EOL, Java 7, geen MFA) — verantwoordelijkheid opdrachtgever
 - Organisatieniveau (GitHub governance, environment protection) — verantwoordelijkheid projectbeheerder

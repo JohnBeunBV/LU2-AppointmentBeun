@@ -122,7 +122,7 @@ jobs:
             --severity-threshold=high \
             --policy-path=$(pwd)/.snyk \
             --sarif-file-output=snyk.sarif \
-            --json-file-output=snyk-sca.json || true
+            --json-file-output=snyk-sca.json
           echo "Exit code: $?"
           echo "Files in directory:"
           ls -la *.sarif *.json 2>/dev/null || echo "Geen output bestanden gevonden"

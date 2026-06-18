@@ -221,6 +221,8 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Transactional
 	public AppointmentType retireAppointmentType(
 			AppointmentType appointmentType, String reason) {
+		appointmentType.setRetired(true);
+		appointmentType.setRetireReason(reason);
 		return saveAppointmentType(appointmentType);
 	}
 
@@ -310,6 +312,8 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 					reason);
 		}
 
+		appointmentBlock.setVoided(true);
+		appointmentBlock.setVoidReason(reason);
 		return saveAppointmentBlock(appointmentBlock);
 	}
 
@@ -419,6 +423,8 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 				+ " patientUuid=" + patientUuid
 				+ " reason=" + reason
 				+ " userUuid=" + userUuid);
+		appointment.setVoided(true);
+		appointment.setVoidReason(reason);
 		return saveAppointment(appointment);
 	}
 
@@ -483,6 +489,8 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional
 	public TimeSlot voidTimeSlot(TimeSlot timeSlot, String reason) {
+		timeSlot.setVoided(true);
+		timeSlot.setVoidReason(reason);
 		return saveTimeSlot(timeSlot);
 	}
 
@@ -999,12 +1007,12 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 						break;
 					default :
 						// No need to change
-						appointmentsInStates.remove(appointment);
+						iter.remove();
 						break;
 				}
 
 			} else {
-				appointmentsInStates.remove(appointment);
+				iter.remove();
 			}
 		}
 

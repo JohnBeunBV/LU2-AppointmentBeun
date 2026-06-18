@@ -73,7 +73,7 @@ jobs:
           cache: maven
 
       - name: Build and run tests
-        run: mvn clean verify
+        run: mvn clean verify -U --no-transfer-progress
 
       # ── SAST: SonarQube ─────────────────────────────────────────────────────
       # Mitigeert: CICD-03 | NEN-7510: 8.29

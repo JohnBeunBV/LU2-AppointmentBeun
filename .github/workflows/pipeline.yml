@@ -119,9 +119,9 @@ jobs:
           snyk test \
             --all-projects \
             --severity-threshold=high \
-            --policy-path=.snyk \
-            --sarif-file-output=snyk.sarif \
-            --json-file-output=snyk-sca.json
+            --policy-path=$(pwd)/.snyk \
+            --print-deps \
+            2>&1 | head -50
 
       - name: Upload Snyk SARIF to GitHub Security tab
         if: always()

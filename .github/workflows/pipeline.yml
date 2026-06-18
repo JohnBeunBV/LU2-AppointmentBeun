@@ -119,6 +119,7 @@ jobs:
           snyk test \
             --maven-aggregate-project \
             --severity-threshold=high \
+            --policy-path=.snyk \
             --sarif-file-output=snyk.sarif \
             --json-file-output=snyk-sca.json
 

@@ -1,6 +1,7 @@
 package org.openmrs.module.appointmentscheduling.api;
 
 import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
 import org.junit.After;
@@ -35,6 +36,7 @@ public class AppointmentAuditLogTest extends BaseModuleContextSensitiveTest {
 
     private AppointmentService service;
     private AuditCapturingAppender appender;
+    private Level originalLevel;
 
     @Before
     public void before() throws Exception {
@@ -42,13 +44,22 @@ public class AppointmentAuditLogTest extends BaseModuleContextSensitiveTest {
         executeDataSet("standardAppointmentTestDataset.xml");
 
         appender = new AuditCapturingAppender();
-        // Attach to root logger so we catch output regardless of CGLIB proxy class name
-        Logger.getRootLogger().addAppender(appender);
+
+        // OpenMRS test log4j config sets root level to WARN/ERROR, which silently drops
+        // log.info() calls before they reach any appender. Force INFO for this test class.
+        Logger serviceLogger = Logger.getLogger(
+                "org.openmrs.module.appointmentscheduling.api.impl.AppointmentServiceImpl");
+        originalLevel = serviceLogger.getLevel();
+        serviceLogger.setLevel(Level.INFO);
+        serviceLogger.addAppender(appender);
     }
 
     @After
     public void after() {
-        Logger.getRootLogger().removeAppender(appender);
+        Logger serviceLogger = Logger.getLogger(
+                "org.openmrs.module.appointmentscheduling.api.impl.AppointmentServiceImpl");
+        serviceLogger.removeAppender(appender);
+        serviceLogger.setLevel(originalLevel);
     }
 
     // ── CREATE ───────────────────────────────────────────────────────────────────
@@ -88,8 +99,8 @@ public class AppointmentAuditLogTest extends BaseModuleContextSensitiveTest {
 
         assertTrue("changeAppointmentStatus naar CANCELLED moet een [AUDIT]-regel schrijven",
                 appender.containsAudit("action=changeAppointmentStatus"));
-        assertTrue("Audit-regel moet newStatus=CANCELLED bevatten",
-                appender.containsAudit("newStatus=CANCELLED"));
+        assertTrue("Audit-regel moet newStatus=Cancelled bevatten",
+                appender.containsAudit("newStatus=Cancelled"));
     }
 
     // ── UPDATE (status wijziging) ─────────────────────────────────────────────────
@@ -103,8 +114,8 @@ public class AppointmentAuditLogTest extends BaseModuleContextSensitiveTest {
 
         assertTrue("changeAppointmentStatus naar COMPLETED moet een [AUDIT]-regel schrijven",
                 appender.containsAudit("action=changeAppointmentStatus"));
-        assertTrue("Audit-regel moet newStatus=COMPLETED bevatten",
-                appender.containsAudit("newStatus=COMPLETED"));
+        assertTrue("Audit-regel moet newStatus=Completed bevatten",
+                appender.containsAudit("newStatus=Completed"));
     }
 
     // ── BOOK ─────────────────────────────────────────────────────────────────────

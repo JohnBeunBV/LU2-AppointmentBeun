@@ -13,15 +13,17 @@
 
 De volgende non-functional requirements zijn vastgesteld op basis van de NEN-7510:2024 norm en IEC 62304 klasse B (medische software zonder direct letselrisico). Per eis is de tooling geconfigureerd die dit automatisch meet en het CI-proces laat falen bij niet-voldoen.
 
-| NFR | Meetbare grens | Tooling | CI-gedrag bij niet-voldoen |
-|-----|---------------|---------|---------------------------|
-| Instruction coverage ≥ 70% (`api`-module) | COVEREDRATIO ≥ 0.70 | JaCoCo 0.8.11 (`jacoco:check`) | `mvn verify` faalt; build stopt |
-| Geen kritieke code smells of bugs | SonarQube quality gate PASSED | SonarCloud | Merge naar `main`/`release/*` geblokkeerd |
-| Geen dependency-kwetsbaarheden (CVSS ≥ 7) | 0 high/critical CVE's | Snyk | Pipeline faalt bij `snyk test` |
-| Geen container-kwetsbaarheden (CRITICAL/HIGH) | 0 CRITICAL/HIGH CVE's in image | Trivy | Pipeline faalt na docker build |
-| Geen secrets in broncode | 0 gevonden secrets | Gitleaks | Eerste job in pipeline; blokkeert alles |
+| NFR | Meetbare grens | Tooling | Workflow | CI-gedrag bij niet-voldoen |
+|-----|---------------|---------|----------|---------------------------|
+| Instruction coverage ≥ 70% (`api`-module) | COVEREDRATIO ≥ 0.70 | JaCoCo 0.8.11 | `pipeline.yml` | `mvn verify` faalt; build stopt |
+| Geen beveiligingskwetsbaarheden in broncode (SAST) | 0 high/critical findings | CodeQL (`security-extended`) | `codeql.yml` | Resultaten zichtbaar in GitHub Security tab; blokkeert bij branch protection |
+| Geen kritieke code smells of bugs | SonarQube quality gate PASSED | SonarCloud | `pipeline.yml` | Merge naar `main`/`release/*` geblokkeerd |
+| Codekwaliteit voldoet aan JetBrains-normen | Qodana quality gate PASSED | Qodana (JetBrains) | `qodana_code_quality.yml` | PR-check faalt bij kwaliteitsgate mislukking |
+| Geen dependency-kwetsbaarheden (CVSS ≥ 7) | 0 high/critical CVE's | Snyk | `pipeline.yml` | Pipeline faalt bij `snyk test` |
+| Geen container-kwetsbaarheden (CRITICAL/HIGH) | 0 CRITICAL/HIGH CVE's in image | Trivy | `pipeline.yml` | Pipeline faalt na docker build |
+| Geen secrets in broncode | 0 gevonden secrets | Gitleaks | `pipeline.yml` | Eerste job in pipeline; blokkeert alles |
 
-Deze tooling is geconfigureerd in `.github/workflows/pipeline.yml` en `openmrs-module-appointmentscheduling/pom.xml`. De JaCoCo-drempel is gekozen op basis van IEC 62304 klasse B (≥ 75% aanbevolen) en pragmatisch verlaagd naar 70% als harde minimumgrens, met 80% als streefdoel — zie [02-coverage-onderbouwing.md](02-coverage-onderbouwing.md) voor de volledige onderbouwing.
+Deze tooling is geconfigureerd in `.github/workflows/pipeline.yml`, `.github/workflows/codeql.yml`, `.github/workflows/qodana_code_quality.yml` en `openmrs-module-appointmentscheduling/pom.xml`. De JaCoCo-drempel is gekozen op basis van IEC 62304 klasse B (≥ 75% aanbevolen) en pragmatisch verlaagd naar 70% als harde minimumgrens, met 80% als streefdoel — zie [02-coverage-onderbouwing.md](02-coverage-onderbouwing.md) voor de volledige onderbouwing.
 
 ---
 

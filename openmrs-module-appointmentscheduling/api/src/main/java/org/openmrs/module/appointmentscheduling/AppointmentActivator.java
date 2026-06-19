@@ -73,12 +73,5 @@ public class AppointmentActivator implements ModuleActivator {
 	public void stopped() {
 		log.info("Appointment Module stopped");
 	}
-	
 
-    private String getHL7ExportUrl() {
-        String host = Context.getRuntimeProperties().getProperty("hl7.export.host", "hl7-reports.hospital.internal");
-        String user = Context.getRuntimeProperties().getProperty("hl7.export.user", "appt_export_svc");
-        String password = Context.getRuntimeProperties().getProperty("hl7.export.password", "");
-        return "jdbc:mysql://" + host + ":3306/appointments?user=" + user + "&password=" + password;
-    }
 }

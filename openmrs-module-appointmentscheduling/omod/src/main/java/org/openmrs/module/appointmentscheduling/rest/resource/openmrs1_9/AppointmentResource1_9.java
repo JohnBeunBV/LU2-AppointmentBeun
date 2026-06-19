@@ -195,22 +195,7 @@ public class AppointmentResource1_9 extends DataDelegatingCrudResource<Appointme
 		Patient patient = context.getParameter("patient") != null ? Context.getPatientService().getPatientByUuid(
 		    context.getParameter("patient")) : null;
 
-		// ACL: niet-admins mogen alleen afspraken zien waar zij zelf de provider zijn
-		User currentUser = Context.getAuthenticatedUser();
-		if (!currentUser.isSuperUser()) {
-			Collection<Provider> userProviders = Context.getProviderService()
-					.getProvidersByPerson(currentUser.getPerson(), false);
-			if (userProviders.isEmpty()) {
-				throw new APIAuthenticationException(
-						"Geen toegang: u bent geen geregistreerde provider");
-			}
-			Provider currentProvider = userProviders.iterator().next();
-			if (provider != null && !provider.equals(currentProvider)) {
-				throw new APIAuthenticationException(
-						"Geen toegang tot afspraken van andere providers");
-			}
-			provider = currentProvider;
-		}
+		provider = enforceProviderAcl(Context.getAuthenticatedUser(), provider);
 
 		Location location = context.getParameter("location") != null ? Context.getLocationService().getLocationByUuid(
 		    context.getParameter("location")) : null;
@@ -276,5 +261,23 @@ public class AppointmentResource1_9 extends DataDelegatingCrudResource<Appointme
 
 	public String getDisplayString(Appointment appointment) {
 		return appointment.getAppointmentType().getName() + " : " + appointment.getStatus();
+	}
+
+	Provider enforceProviderAcl(User currentUser, Provider requestedProvider) {
+		if (currentUser.isSuperUser()) {
+			return requestedProvider;
+		}
+		Collection<Provider> userProviders = Context.getProviderService()
+				.getProvidersByPerson(currentUser.getPerson(), false);
+		if (userProviders.isEmpty()) {
+			throw new APIAuthenticationException(
+					"Geen toegang: u bent geen geregistreerde provider");
+		}
+		Provider currentProvider = userProviders.iterator().next();
+		if (requestedProvider != null && !requestedProvider.equals(currentProvider)) {
+			throw new APIAuthenticationException(
+					"Geen toegang tot afspraken van andere providers");
+		}
+		return currentProvider;
 	}
 }

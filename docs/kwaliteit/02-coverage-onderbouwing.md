@@ -1,4 +1,4 @@
-# Coverage-onderbouwing
+# 02 Coverage-onderbouwing - OpenMRS Appointment Scheduler
 
 ## Gekozen minimum: 70% instruction coverage (doel: 80%)
 
@@ -18,13 +18,13 @@ Deze module beheert afspraken voor patiënten in OpenMRS. Fouten in de kernlogic
 
 #### Normatief kader
 
-| Norm | Vereiste / aanbeveling |
-|------|------------------------|
-| NEN-7510:2017 §8.29 | Aantoonbare kwaliteitscontrole van software in zorgsystemen |
-| IEC 62304 klasse B | ≥ 75% statement coverage voor medische software zonder direct letselrisico |
-| IEC 62304 klasse C | ≥ 100% branch coverage voor levenskritische software |
-| OWASP ASVS L2 | Geautomatiseerde tests aanwezig voor alle beveiligingsfuncties |
-| Interne standaard | 80% als pragmatisch minimum voor klasse B-achtige systemen |
+| Norm                | Vereiste / aanbeveling                                                     |
+| ------------------- | -------------------------------------------------------------------------- |
+| NEN-7510:2017 §8.29 | Aantoonbare kwaliteitscontrole van software in zorgsystemen                |
+| IEC 62304 klasse B  | ≥ 75% statement coverage voor medische software zonder direct letselrisico |
+| IEC 62304 klasse C  | ≥ 100% branch coverage voor levenskritische software                       |
+| OWASP ASVS L2       | Geautomatiseerde tests aanwezig voor alle beveiligingsfuncties             |
+| Interne standaard   | 80% als pragmatisch minimum voor klasse B-achtige systemen                 |
 
 Afsprakenbeheer valt onder IEC 62304 klasse B (geen direct letselrisico, wel patiëntimpact). De 80%-drempel ligt boven de IEC-minimumeis van 75% en biedt een marge voor testdrift.
 

@@ -129,5 +129,5 @@ Variabele wordt aangemaakt maar nooit gebruikt. **Niet conform M5.**
 | M1 — Geen deprecated API         | Niet conform  |
 | M2 — Methoden correct            | Niet conform  |
 | M3 — Constanten correct          | Conform ✅    |
-| M4 — Veilige iteratie            | Niet conform  |
+| M4 — Veilige iteratie            | Conform ✅    |
 | M5 — Geen ongebruikte variabelen | Conform ✅    |

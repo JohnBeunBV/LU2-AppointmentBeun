@@ -126,7 +126,7 @@ Variabele wordt aangemaakt maar nooit gebruikt. **Niet conform M5.**
 | S1 — Geen hardcoded credentials  | Niet conform  |
 | S2 — Geen PII in logs            | Conform ✅    |
 | S3 — Toegangscontrole            | Deels conform |
-| M1 — Geen deprecated API         | Niet conform  |
+| M1 — Geen deprecated API         | Conform ✅    |
 | M2 — Methoden correct            | Niet conform  |
 | M3 — Constanten correct          | Conform ✅    |
 | M4 — Veilige iteratie            | Conform ✅    |

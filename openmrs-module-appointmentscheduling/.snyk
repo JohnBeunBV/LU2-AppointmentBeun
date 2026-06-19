@@ -1,239 +1,312 @@
-# .snyk
+# Snyk (https://snyk.io) policy file
+# All suppressions below are for vulnerabilities in OpenMRS 1.9.9 platform
+# dependencies (openmrs-api, openmrs-web) and the reporting-api 0.9.2 module.
+# These are provided/runtime dependencies of the OpenMRS platform — upgrading
+# them independently is not possible without breaking the entire platform.
+# Review date: 2027-06-18
 version: v1.25.0
 ignore:
-  'SNYK-JAVA-C3P0-461017':
+
+  # ── c3p0:c3p0@0.9.1 via openmrs-api:1.9.9 ──────────────────────────────────
+  SNYK-JAVA-C3P0-461017:
     - '*':
         reason: >
-          Transitive dependency via openmrs-api@1.9.9. Upgraden vereist
-          platform-upgrade naar OpenMRS 2.x, buiten projectscope.
-          Restrisico gedocumenteerd in security backlog (buiten scope).
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-C3P0-461018':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-C3P0-461017.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMMONSLANG-10734077':
-    - '*':
-        reason: Transitive via openmrs-api@1.9.9, geen upgrade beschikbaar.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458':
-    - '*':
-        reason: Transitive via openmrs-api@1.9.9. XStream upgrade breaking change voor OpenMRS 1.9.9.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1088337':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569176':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569177':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569178':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569179':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569180':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569181':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569182':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569183':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569185':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569186':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569187':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569190':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569191':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-2388977':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-30385':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-31394':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-8352924':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-DOM4J-174153':
-    - '*':
-        reason: Transitive via openmrs-api@1.9.9, geen upgrade beschikbaar zonder platformbreuk.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-DOM4J-2812975':
-    - '*':
-        reason: Zelfde als SNYK-JAVA-DOM4J-174153.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-JAVAXSERVLET-30449':
-    - '*':
-        reason: Transitive via openmrs-web@1.9.9, geen upgrade beschikbaar.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-LOG4J-2342645':
+          Transitive via openmrs-api:1.9.9 (provided). No fix available.
+          OpenMRS platform version is locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-C3P0-461018:
     - '*':
         reason: >
-          log4j@1.2.15 is EOL en transitive via openmrs-api@1.9.9.
-          Geen upgrade beschikbaar zonder platformbreuk. Restrisico
-          gedocumenteerd in security backlog.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-LOG4J-2342646':
+          Transitive via openmrs-api:1.9.9 (provided). No fix available.
+          OpenMRS platform version is locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── com.thoughtworks.xstream:xstream@1.4.3 via openmrs-api:1.9.9 ────────────
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1040458:
     - '*':
-        reason: Zelfde als SNYK-JAVA-LOG4J-2342645.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-LOG4J-2342647':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1088337:
     - '*':
-        reason: Zelfde als SNYK-JAVA-LOG4J-2342645.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-LOG4J-572732':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569176:
     - '*':
-        reason: Zelfde als SNYK-JAVA-LOG4J-2342645.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-MYSQL-31399':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569177:
     - '*':
-        reason: Transitive via openmrs-web@1.9.9. MySQL connector upgrade vereist OpenMRS platformupgrade.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-MYSQL-451464':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569178:
     - '*':
-        reason: Zelfde als SNYK-JAVA-MYSQL-31399.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGAPACHECOMMONS-10734078':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569179:
     - '*':
-        reason: Transitive via openmrs-api@1.9.9, fix in 3.18.0 maar breaking change voor platform.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGAPACHEPOI-32049':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569180:
     - '*':
-        reason: Transitive via reporting-api@0.9.2, buiten directe modulescope.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGAPACHESTRUTS-2841503':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569181:
     - '*':
-        reason: Transitive via openmrs-web@1.9.9, geen upgrade beschikbaar zonder platformbreuk.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGAPACHEVELOCITY-3116414':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569182:
     - '*':
-        reason: Transitive via openmrs-api@1.9.9, geen upgrade beschikbaar.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGAPACHEXMLBEANS-1060048':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569183:
     - '*':
-        reason: Transitive via reporting-api@0.9.2, buiten directe modulescope.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGCODEHAUSJACKSON-3326362':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569185:
     - '*':
-        reason: Transitive via openmrs-web@1.9.9, geen upgrade beschikbaar.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGCODEHAUSJACKSON-534878':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569186:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGCODEHAUSJACKSON-3326362.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGLIQUIBASE-2419059':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569187:
     - '*':
-        reason: Transitive via openmrs-api@1.9.9, fix in 4.8.0 maar breaking change voor platform.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGMOZILLA-1314295':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569190:
     - '*':
-        reason: Transitive via reporting-api@0.9.2, buiten directe modulescope.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGMOZILLA-14176042':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-1569191:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGMOZILLA-1314295.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGOPENMRSWEB-16478395':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-2388977:
     - '*':
-        reason: Directe kwetsbaarheid in openmrs-web@1.9.9 (EOL platform). Platformupgrade buiten scope.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGOPENMRSWEB-2411024':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-30385:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGOPENMRSWEB-16478395.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-31394:
+    - '*':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-COMTHOUGHTWORKSXSTREAM-8352924:
+    - '*':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── dom4j:dom4j@1.6.1 via openmrs-api:1.9.9 ─────────────────────────────────
+  SNYK-JAVA-DOM4J-174153:
     - '*':
         reason: >
-          Spring Framework 3.0.5 is EOL en transitive via openmrs-api@1.9.9.
-          Upgraden naar 6.x vereist Java 17+ en OpenMRS 2.x — buiten projectscope.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-2436751':
+          Transitive via openmrs-api:1.9.9 (provided). No fix available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-DOM4J-2812975:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-12817817':
+        reason: >
+          Transitive via openmrs-api:1.9.9 (provided). No fix available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── commons-lang via openmrs-api:1.9.9 ───────────────────────────────────────
+  SNYK-JAVA-COMMONSLANG-10734077:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-30157':
+        reason: >
+          Transitive via openmrs-api:1.9.9 > velocity@1.6.2 (provided).
+          No fix available. Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGAPACHECOMMONS-10734078:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-15701845':
+        reason: >
+          Transitive via openmrs-api:1.9.9 (provided). No fix available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── log4j:log4j@1.2.15 via openmrs-api:1.9.9 ────────────────────────────────
+  SNYK-JAVA-LOG4J-572732:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-31332':
+        reason: >
+          Transitive via openmrs-api:1.9.9 (provided). No fix available for log4j 1.x.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-LOG4J-2342645:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-7945490':
+        reason: Transitive via openmrs-api:1.9.9 (provided). No fix available. Platform locked.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-LOG4J-2342646:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-8230373':
+        reason: Transitive via openmrs-api:1.9.9 (provided). No fix available. Platform locked.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-LOG4J-2342647:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-16109615':
+        reason: Transitive via openmrs-api:1.9.9 (provided). No fix available. Platform locked.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── org.apache.velocity via openmrs-api:1.9.9 ────────────────────────────────
+  SNYK-JAVA-ORGAPACHEVELOCITY-3116414:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-30163':
+        reason: >
+          Transitive via openmrs-api:1.9.9 (provided). No fix available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── org.liquibase:liquibase-core@2.0.5 via openmrs-api:1.9.9 ─────────────────
+  SNYK-JAVA-ORGLIQUIBASE-2419059:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-31329':
+        reason: >
+          Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── Spring Framework 3.0.5 via openmrs-api/openmrs-web:1.9.9 ─────────────────
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-2436751:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-6261586':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-6444790':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-30157:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
-  'SNYK-JAVA-ORGSPRINGFRAMEWORK-30159':
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-12817817:
     - '*':
-        reason: Zelfde als SNYK-JAVA-ORGSPRINGFRAMEWORK-12008931.
-        expires: '2026-12-31T00:00:00.000Z'
+        reason: Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-15701845:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-31332:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-7945490:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-8230373:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-16109615:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-30163:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-31329:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-6261586:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-6444790:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGSPRINGFRAMEWORK-30159:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── openmrs-web:1.9.9 direct vulnerabilities ─────────────────────────────────
+  SNYK-JAVA-ORGOPENMRSWEB-16478395:
+    - '*':
+        reason: >
+          Direct vulnerability in openmrs-web:1.9.9 (provided). No upgrade available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGOPENMRSWEB-2411024:
+    - '*':
+        reason: >
+          Direct vulnerability in openmrs-web:1.9.9 (provided). No upgrade available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── openmrs-web transitive: commons-fileupload, jstl, mysql, struts, jackson, taglibs
+  SNYK-JAVA-COMMONSFILEUPLOAD-10363252:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-JAVAXSERVLET-30449:
+    - '*':
+        reason: >
+          Transitive via openmrs-web:1.9.9 (provided). No fix available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-MYSQL-31399:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-MYSQL-451464:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGAPACHESTRUTS-2841503:
+    - '*':
+        reason: >
+          Transitive via openmrs-web:1.9.9 > velocity-tools (provided). No fix available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGCODEHAUSJACKSON-3326362:
+    - '*':
+        reason: >
+          Transitive via openmrs-web:1.9.9 (provided). No fix available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGCODEHAUSJACKSON-534878:
+    - '*':
+        reason: >
+          Transitive via openmrs-web:1.9.9 (provided). No fix available.
+          Platform locked — outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-TAGLIBS-31357:
+    - '*':
+        reason: Transitive via openmrs-web:1.9.9 (provided). Platform locked — outside scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+  # ── reporting-api:0.9.2 transitive: handlebars, poi, xmlbeans, rhino ──────────
+  SNYK-JAVA-COMGITHUBJKNACK-17372911:
+    - '*':
+        reason: >
+          Transitive via reporting-api:0.9.2 (provided). Upgrading handlebars would
+          require a new reporting module version incompatible with OpenMRS 1.9.9.
+          Outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGAPACHEPOI-32049:
+    - '*':
+        reason: >
+          Transitive via reporting-api:0.9.2 (provided). Reporting module version
+          locked to OpenMRS 1.9.9 compatibility. Outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGAPACHEXMLBEANS-1060048:
+    - '*':
+        reason: >
+          Transitive via reporting-api:0.9.2 > poi-ooxml (provided). Reporting module
+          locked to OpenMRS 1.9.9 compatibility. Outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGMOZILLA-1314295:
+    - '*':
+        reason: >
+          Transitive via reporting-api:0.9.2 > handlebars > rhino (provided).
+          Reporting module locked to OpenMRS 1.9.9 compatibility. Outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+  SNYK-JAVA-ORGMOZILLA-14176042:
+    - '*':
+        reason: >
+          Transitive via reporting-api:0.9.2 > handlebars > rhino (provided).
+          Reporting module locked to OpenMRS 1.9.9 compatibility. Outside project scope.
+        expires: 2027-06-18T00:00:00.000Z
+
+patch: {}

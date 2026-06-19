@@ -188,18 +188,15 @@ public class DWRAppointmentService {
 	}
 	
 	private String buildLocationList(Location location) {
-		String ans = "";
-		if (location != null) {
-			ans = location.getId() + "";
-			if (location.getChildLocations().size() == 0)
-				return ans;
-			else {
-				for (Location locationChild : location.getChildLocations()) {
-					ans += "," + buildLocationList(locationChild);
-				}
+		if (location == null)
+			return "";
+		StringBuilder ans = new StringBuilder(location.getId() + "");
+		if (!location.getChildLocations().isEmpty()) {
+			for (Location locationChild : location.getChildLocations()) {
+				ans.append(",").append(buildLocationList(locationChild));
 			}
 		}
-		return ans;
+		return ans.toString();
 	}
 	
 	private String getTimeSlotLength(Integer appointmentBlockId) {
@@ -233,7 +230,7 @@ public class DWRAppointmentService {
 			List<Appointment> inconsultationAppointments = Context.getService(AppointmentService.class)
 			        .getAppointmentsByConstraints(null, null, null, provider, null, AppointmentStatus.INCONSULTATION);
 			
-			return (inconsultationAppointments.size() != 0);
+			return !inconsultationAppointments.isEmpty();
 		}
 	}
 	
@@ -255,7 +252,7 @@ public class DWRAppointmentService {
 			List<Appointment> inconsultationAppointments = Context.getService(AppointmentService.class)
 			        .getAppointmentsByConstraints(null, null, null, provider, null, AppointmentStatus.INCONSULTATION);
 			
-			return (inconsultationAppointments.size() != 0);
+			return !inconsultationAppointments.isEmpty();
 		}
 	}
 	

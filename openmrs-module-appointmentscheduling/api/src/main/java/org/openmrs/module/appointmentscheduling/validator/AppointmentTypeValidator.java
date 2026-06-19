@@ -90,7 +90,7 @@ public class AppointmentTypeValidator implements Validator {
 	
 	private boolean verifyIfNameHasMoreThan100Characters(String appointmentName) {
 		if (appointmentName != null) {
-			return (appointmentName.length() > 100) ? true : false;
+			return appointmentName.length() > 100;
 		}
 		return false;
 	}
@@ -110,7 +110,7 @@ public class AppointmentTypeValidator implements Validator {
 	
 	private boolean verifyIfDescriptionHasMoreThan1024Characters(String description) {
 		if (description != null) {
-			return (description.length() > 1024) ? true : false;
+			return description.length() > 1024;
 		}
 		return false;
 	}

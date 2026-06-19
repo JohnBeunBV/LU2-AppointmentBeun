@@ -834,8 +834,6 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 		relevantLocations.add(location);
 
 		for (Appointment appointment : appointments) {
-			boolean satisfyingConstraints = true;
-
 			// Filter by location
 			if (location != null) {
 				if (relevantLocations.contains(appointment.getTimeSlot()
@@ -1094,8 +1092,9 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 		// Compute average
 		for (Map.Entry<AppointmentType, Integer> counter : counters.entrySet())
-			averages.put(counter.getKey(), averages.get(counter.getKey())
-					/ counter.getValue());
+			if (counter.getValue() != null && counter.getValue() > 0)
+				averages.put(counter.getKey(), averages.get(counter.getKey())
+						/ counter.getValue());
 
 		return averages;
 	}
@@ -1160,8 +1159,9 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 		// Compute average
 		for (Map.Entry<Provider, Integer> counter : counters.entrySet())
-			averages.put(counter.getKey(), averages.get(counter.getKey())
-					/ counter.getValue());
+			if (counter.getValue() != null && counter.getValue() > 0)
+				averages.put(counter.getKey(), averages.get(counter.getKey())
+						/ counter.getValue());
 
 		return averages;
 	}
@@ -1317,7 +1317,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	public TimeSlot createTimeSlotUsingProviderSchedule(Date appointmentDate, Provider provider, Location location) {
 
 		List<ProviderSchedule> ar = getProviderScheduleDAO().getProviderScheduleByConstraints(location, provider, appointmentDate);
-		if (ar.size() > 0) {
+		if (!ar.isEmpty()) {
 			TimeSlot timeSlot = new TimeSlot();
 			ProviderSchedule providerSchedule = ar.get(0);
 				Date startDate = getDateAndTime(appointmentDate, providerSchedule.getStartTime());
@@ -1345,10 +1345,15 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	}
 
 	public Date getDateAndTime(Date date, Date time) {
-		return new Date(
-				date.getYear(), date.getMonth(), date.getDate(),
-				time.getHours(), time.getMinutes(), time.getSeconds()
-		);
+		Calendar dateCal = Calendar.getInstance();
+		dateCal.setTime(date);
+		Calendar timeCal = Calendar.getInstance();
+		timeCal.setTime(time);
+		dateCal.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY));
+		dateCal.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE));
+		dateCal.set(Calendar.SECOND, timeCal.get(Calendar.SECOND));
+		dateCal.set(Calendar.MILLISECOND, 0);
+		return dateCal.getTime();
 	}
 
 	@Override

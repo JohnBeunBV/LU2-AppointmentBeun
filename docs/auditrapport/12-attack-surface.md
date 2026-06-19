@@ -216,7 +216,7 @@ Het trust model beschrijft wat de module impliciet vertrouwt — zonder explicie
 | **Hibernate ORM**                      | Volledig          | SQL wordt niet handmatig opgebouwd; de module vertrouwt erop dat Hibernate SQL-injectie voorkomt              | Bug of misconfiguratie in Hibernate leidt tot directe SQL-blootstelling |
 | **Spring MVC / DWR framework**         | Volledig          | Input die via controllers binnenkomt, wordt niet nogmaals gesaniteerd op serviceniveau                        | XSS of parameter-tampering als het framework dit niet afvangt  |
 | **Java JVM runtime**                   | Volledig          | Standaardveronderstelling; geen aanvullende sandboxing                                                        | JVM-kwetsbaarheden (CVE's op Java 7 — EOL)                    |
-| **Maven-afhankelijkheden (SC-05)**      | Gedeeltelijk      | OWASP Dependency Check en Trivy controleren op bekende CVE's in de CI/CD-pipeline                            | Verouderde bibliotheek met 0-day vóór detectie                 |
+| **Maven-afhankelijkheden (SC-05)**      | Gedeeltelijk      | Snyk en Trivy controleren op bekende CVE's in de CI/CD-pipeline                                              | Verouderde bibliotheek met 0-day vóór detectie                 |
 | **GitHub Actions-runners**             | Gedeeltelijk      | GitHub-hosted runners worden als veilig beschouwd, maar zijn gedeelde omgevingen                              | Runner-compromise geeft toegang tot secrets in pipeline-context |
 | **`.gitleaks.toml`-suppression-lijst** | Gedeeltelijk      | Suppressions worden op twee-ogen-principe beoordeeld, maar zijn handmatig beheerd                             | Foutief gesuppresseerde secret wordt niet gedetecteerd         |
 

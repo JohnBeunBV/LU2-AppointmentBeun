@@ -250,7 +250,7 @@ public class AppointmentBlockFormController {
 						boolean canBeUpdated = true;
 						currentTimeSlots = appointmentService.getTimeSlotsInAppointmentBlock(appointmentBlock);
 						for (TimeSlot timeSlot : currentTimeSlots) {
-							if (appointmentService.getAppointmentsInTimeSlot(timeSlot).size() > 0) {
+							if (!appointmentService.getAppointmentsInTimeSlot(timeSlot).isEmpty()) {
 								canBeUpdated = false;
 								break;
 							}
@@ -262,7 +262,7 @@ public class AppointmentBlockFormController {
 						}
 					}
 					//Check if overlapping appointment blocks exist in the system(We will consider Time And Provider only)
-					if (appointmentService.getOverlappingAppointmentBlocks(appointmentBlock).size() > 0) { //Overlapping exists
+					if (!appointmentService.getOverlappingAppointmentBlocks(appointmentBlock).isEmpty()) { //Overlapping exists
 						httpSession.setAttribute(WebConstants.OPENMRS_ERROR_ATTR,
 						    "appointmentscheduling.AppointmentBlock.error.appointmentBlockOverlap");
 						return null;

@@ -22,12 +22,19 @@ De vijf afzonderlijke workflowbestanden zijn samengevoegd tot één enkele workf
 **Opgebouwde job-structuur:**
 
 ```
+pipeline.yml:
 secret-scan
-    └── build-and-test (build, tests, SonarQube, Snyk, SBOM, coverage)
-            └── docker-build
+    └── build-and-test (build, tests, JaCoCo, SonarQube, Snyk, SBOM)
+            └── docker-build (Trivy scan)
                     ├── deploy-test       (alleen develop)
                     ├── deploy-acceptance (alleen release/*)
                     └── deploy-prod       (alleen workflow_dispatch)
+
+codeql.yml (parallel):
+analyze (CodeQL Java SAST — security-extended)
+
+qodana_code_quality.yml (parallel):
+qodana (JetBrains kwaliteitsanalyse)
 ```
 
 **Opgeloste bugs ten opzichte van de oude workflows:**
@@ -44,7 +51,7 @@ secret-scan
 **Toegevoegde beveiligingsmaatregelen in de pipeline:**
 
 - **Gitleaks** secret scan als eerste job — blokkeert bij gevonden secrets
-- **SonarQube** SAST analyse (waarschuwing op develop, hard gate op release/main)
+- **SonarQube** SAST analyse (alle branches `continue-on-error: true` — SonarCloud free plan beperking; harde pipeline-gates via Gitleaks en Snyk)
 - **Snyk** dependency vulnerability scan (CVSS ≥ 7)
 - **Trivy** container image scan (CRITICAL/HIGH CVE's)
 - SSH-sleutels via `webfactory/ssh-agent` (sleutel nooit naar schijf geschreven)

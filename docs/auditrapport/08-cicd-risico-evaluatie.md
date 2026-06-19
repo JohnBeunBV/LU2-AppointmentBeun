@@ -105,7 +105,7 @@ Voorbeeld: Log4Shell (CVE-2021-44228) zou via de `SC-06` asset (Log4j/SLF4J) wor
 **Aanbevolen maatregelen:**
 
 - Voeg Trivy toe voor scanning van de container image (`trivy image`)
-- Voeg Trivy of OWASP Dependency Check toe voor scanning van Maven-dependencies (`trivy fs` of `mvn dependency-check:check`)
+- Voeg Snyk toe voor scanning van Maven-dependencies (`snyk test --all-projects`)
 - Definieer een policy: blokkeer bij CRITICAL of HIGH severity CVE's zonder bekende fix
 
 ---
@@ -271,7 +271,7 @@ Een **false positive** is een bevinding van een scanner die na handmatige beoord
 | Gitleaks         | `[[allowlist]]` in `.gitleaks.toml`                | Repository-root              |
 | Trivy            | `.trivyignore` (CVE-ID per regel)                  | Repository-root              |
 | SonarQube        | `// NOSONAR` inline of "Won't Fix" markering in UI | Broncode / SonarQube project |
-| OWASP Dep. Check | `<suppress>` in `suppressions.xml`                 | `owasp/` map                 |
+| Snyk             | `.snyk` policy-bestand (allow-list per CVE-ID)     | Repository-root              |
 
 ### 5.4 Regels voor suppression
 

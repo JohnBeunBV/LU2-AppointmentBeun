@@ -59,7 +59,7 @@ In [pom.xml](../../openmrs-module-appointmentscheduling/pom.xml):
 <minimum>0.70</minimum>
 ```
 
-De `jacoco:check` goal bindt aan de `verify`-fase. `mvn clean verify` faalt automatisch als de coverage onder 80% zakt. De CI-pipeline ([pipeline.yml](../../.github/workflows/pipeline.yml)) voert `mvn clean verify` uit, waardoor de gate actief is op elke push en pull request.
+De `jacoco:check` goal bindt aan de `verify`-fase. `mvn clean verify` faalt automatisch als de coverage onder 70% zakt. De CI-pipeline ([pipeline.yml](../../.github/workflows/pipeline.yml)) voert `mvn clean verify` uit, waardoor de gate actief is op elke push en pull request.
 
 ---
 

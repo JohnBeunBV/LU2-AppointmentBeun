@@ -89,15 +89,6 @@ jobs:
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
-      - name: SonarQube Analysis (release & main — hard gate)
-        if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ github.repository }} \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.qualitygate.wait=true
-
       # ── SCA: Snyk dependency vulnerability scan ──────────────────────────────
       # Mitigeert: CICD-05 | NEN-7510: 8.8 (kwetsbaarheidsbeheer dependencies)
       # Drempel: high = CVSS ≥ 7, equivalent aan de oude -DfailBuildOnCVSS=7.

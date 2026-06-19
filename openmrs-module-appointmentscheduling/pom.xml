@@ -55,7 +55,49 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
+<dependencyManagement>
     <dependencies>
+
+        <!-- Security fix: commons-collections 3.2 → 3.2.2 (Deserialization CVEs) -->
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2.2</version>
+        </dependency>
+
+        <!-- Security fix: commons-fileupload 1.2.1 → 1.3.3 (Arbitrary Code Execution CVE) -->
+        <dependency>
+            <groupId>commons-fileupload</groupId>
+            <artifactId>commons-fileupload</artifactId>
+            <version>1.3.3</version>
+        </dependency>
+
+        <!-- Security fix: xerces 2.8.0 → 2.12.2 (DoS CVEs) -->
+        <dependency>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl</artifactId>
+            <version>2.12.2</version>
+        </dependency>
+
+		<!-- Compatibel met xerces 2.12.2: ElementTraversal (DOM3) vereist xml-apis >= 1.4.01 -->
+		<dependency>
+			<groupId>xml-apis</groupId>
+			<artifactId>xml-apis</artifactId>
+			<version>1.4.01</version>
+		</dependency>
+
+		<!-- Other dependencies -->
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>2.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>3.0.5.RELEASE</version>
+		</dependency>
 
         <!-- Begin OpenMRS core -->
 
@@ -126,14 +168,8 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Other dependencies -->
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-            <version>2.2</version>
-        </dependency>
-
     </dependencies>
+</dependencyManagement>
 
 	<build>
 		<plugins>

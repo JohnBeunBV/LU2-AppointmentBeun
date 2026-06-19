@@ -3,9 +3,13 @@ package org.openmrs.module.appointmentscheduling.rest.resource.openmrs1_9;
 import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.Provider;
+import org.openmrs.User;
 import org.openmrs.Visit;
 import org.openmrs.VisitType;
+import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.context.Context;
+
+import java.util.Collection;
 import org.openmrs.module.appointmentscheduling.Appointment;
 import org.openmrs.module.appointmentscheduling.AppointmentStatusHistory;
 import org.openmrs.module.appointmentscheduling.AppointmentType;
@@ -191,6 +195,8 @@ public class AppointmentResource1_9 extends DataDelegatingCrudResource<Appointme
 		Patient patient = context.getParameter("patient") != null ? Context.getPatientService().getPatientByUuid(
 		    context.getParameter("patient")) : null;
 
+		provider = enforceProviderAcl(Context.getAuthenticatedUser(), provider);
+
 		Location location = context.getParameter("location") != null ? Context.getLocationService().getLocationByUuid(
 		    context.getParameter("location")) : null;
 
@@ -255,5 +261,23 @@ public class AppointmentResource1_9 extends DataDelegatingCrudResource<Appointme
 
 	public String getDisplayString(Appointment appointment) {
 		return appointment.getAppointmentType().getName() + " : " + appointment.getStatus();
+	}
+
+	Provider enforceProviderAcl(User currentUser, Provider requestedProvider) {
+		if (currentUser.isSuperUser()) {
+			return requestedProvider;
+		}
+		Collection<Provider> userProviders = Context.getProviderService()
+				.getProvidersByPerson(currentUser.getPerson(), false);
+		if (userProviders.isEmpty()) {
+			throw new APIAuthenticationException(
+					"Geen toegang: u bent geen geregistreerde provider");
+		}
+		Provider currentProvider = userProviders.iterator().next();
+		if (requestedProvider != null && !requestedProvider.equals(currentProvider)) {
+			throw new APIAuthenticationException(
+					"Geen toegang tot afspraken van andere providers");
+		}
+		return currentProvider;
 	}
 }

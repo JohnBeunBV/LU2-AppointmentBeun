@@ -1,36 +1,36 @@
-# Auditrapport — OpenMRS Appointment Scheduler
+﻿# Auditrapport - OpenMRS Appointment Scheduler
 
 **Module:** OpenMRS Appointment Scheduler  
 **Versie:** 1.17.0-SNAPSHOT  
-**Repository:** [vul repository-URL in]  
-**Beoordelingsperiode:** april 2026 – juni 2026  
-**Auteur(s):** [vul namen in]  
-**Datum:** 18 juni 2026  
+**Repository:** https://github.com/JohnBeunBV/LU2-AppointmentBeun  
+**Beoordelingsperiode:** juni 2026  
+**Auteur(s):** [Storm Kroonen, Nick de Rooij en Thijs van de Veen]  
+**Datum:** 19 juni 2026  
 **Norm:** NEN-7510:2024 Deel 2 (primair) · CRA (aanvullend) · AVG (privacy/logging)
 
 ---
 
 ## 1. Executive Summary
 
-### RAG-status: 🟠 Oranje
+**RAG-status: 🟠 Oranje** — De module is na uitvoering van alle kritieke maatregelen veilig genoeg voor verdere ontwikkeling, maar nog niet productierijp zolang platform-EOL-risico's en een geplande supply chain-maatregel openstaan.
 
-Bij aanvang van de audit verkeerde de module in kritieke staat: vier bevindingen scoorden in de rode zone, waaronder een productiewachtwoord zichtbaar in de broncode en patiëntgegevens die onbeschermd in logbestanden werden weggeschreven. Na uitvoering van alle P1- en P2-maatregelen zijn de meest kritieke risico's opgelost. De module is niet productierijp zolang de onderliggende platform-EOL-risico's (OpenMRS 1.9.9, Java 7 runtime) en de geplande GitHub Actions-pinning (CICD-06) nog openstaan.
+Bij aanvang van de audit verkeerde de module in kritieke staat: vier bevindingen scoorden in de rode zone, waaronder een productiewachtwoord zichtbaar in de broncode en patiëntgegevens die onbeschermd in logbestanden werden weggeschreven. Na uitvoering van alle P1- en P2-maatregelen zijn de meest urgente risico's opgelost. De module voldoet voor het module-gedeelte aan de relevante NEN-7510:2024-2 controls; de CRA-verplichtingen zijn voor zover ze binnen de scope van de module vallen aantoonbaar gedekt. Resterende risico's op platform- en infrastructuurniveau zijn bewust geaccepteerd en gedocumenteerd.
 
-### Top 3 risico's voor de organisatie
+## Top 3 risico's voor de organisatie
 
-| # | Risico (in zorg-taal) | Ernst | Status |
-|---|---|---|---|
-| 1 | Patiëntgegevens (naam, geboortedatum, BSN) werden onbeschermd weggeschreven in logbestanden die voor beheerders zonder medische noodzaak toegankelijk zijn — direct in strijd met de privacywetgeving | 🔴 Kritiek | ✅ Opgelost |
-| 2 | Een databasewachtwoord stond letterlijk in de broncode en is zichtbaar geweest voor iedereen met leestoegang tot de repository, waarmee directe toegang tot alle patiënt- en afspraakdata mogelijk was | 🔴 Kritiek | ✅ Opgelost (wachtwoord te roteren) |
-| 3 | Elke medewerker met een account kon afspraken van alle patiënten inzien, ook van patiënten die zij niet behandelen — een directe privacyschending | 🔴 Kritiek | ✅ Opgelost |
+| #   | Risico                                                                                                                                                                                                                                                                                                                                     | Ernst      | Status                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ----------------------------------- |
+| 1   | Patiëntgegevens — waaronder naam, geboortedatum en patiëntidentificatoren — werden onbeschermd weggeschreven in logbestanden. Deze bestanden waren toegankelijk voor beheerders zonder medische noodzaak, wat de zorginstelling blootstelde aan meldplicht bij de Autoriteit Persoonsgegevens, boetes tot € 20 miljoen en reputatieschade. | 🔴 Kritiek | ✅ Opgelost                         |
+| 2   | Een databasewachtwoord stond letterlijk in de broncode en was zichtbaar voor iedereen met leestoegang tot de repository. Hiermee was directe toegang tot alle patiënt- en afspraakdata mogelijk — een datalek dat de zorgcontinuïteit, het patiëntvertrouwen en de juridische positie van de instelling ernstig had kunnen schaden.        | 🔴 Kritiek | ✅ Opgelost (wachtwoord te roteren) |
+| 3   | Elke medewerker met een account kon afspraken van alle patiënten inzien, ook van patiënten die zij niet behandelen. Dit is een directe schending van de privacywetgeving en het medisch beroepsgeheim, met bijbehorend risico op boetes en verlies van patiëntvertrouwen.                                                                  | 🔴 Kritiek | ✅ Opgelost                         |
 
-### Geprioriteerde roadmap
+## Geprioriteerde roadmap
 
-| Prioriteit | Actie | Termijn |
-|---|---|---|
-| 🔴 Nu | Wachtwoord `Appt@Export2021!` roteren — staat aantoonbaar in 7 git-commits | Direct |
-| 🟠 Deze sprint | CICD-06: GitHub Actions-versies pinnen op SHA-hashes (supply chain bescherming) | Sprint 4 |
-| 🟢 Later | Platform-upgrade naar OpenMRS 2.x + Java 8/11 (OpenMRS 1.9.9 en Java 7 zijn EOL) | Roadmap opdrachtgever |
+| Prioriteit     | Actie                                                                                                                                       | Termijn               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| 🔴 Nu          | Wachtwoord `Appt@Export2021!` roteren — staat aantoonbaar in de git-geschiedenis van de repository                                          | Direct                |
+| 🟠 Deze sprint | GitHub Actions-versies pinnen op vaste hashes als bescherming tegen aanvallen via de softwareleveringsketen                                 | Sprint 4              |
+| 🟢 Later       | Platform-upgrade naar een actuele OpenMRS-versie met ondersteunde Java-runtime — de huidige versies ontvangen geen beveiligingsupdates meer | Roadmap opdrachtgever |
 
 ---
 
@@ -39,19 +39,19 @@ Bij aanvang van de audit verkeerde de module in kritieke staat: vier bevindingen
 ### 2.1 Wat is beoordeeld
 
 - **Module/applicatie:** OpenMRS Appointment Scheduler, versie 1.17.0-SNAPSHOT
-- **Repository:** [vul repository-URL in] — map `openmrs-module-appointmentscheduling/`
-- **Beoordelingsperiode:** april 2026 – juni 2026 (sprints 1 t/m 3)
+- **Repository:** https://github.com/JohnBeunBV/LU2-AppointmentBeun - map `openmrs-module-appointmentscheduling/`
+- **Beoordelingsperiode:** juni 2026 (sprints 1 t/m 4)
 - **Testomgeving:** Development (Docker dev-omgeving, `localhost:8080`), met OpenMRS 1.9.9 en Tomcat 8.0.53
 
-| Component | In scope |
-|---|---|
-| Module-broncode (`api/`, `omod/`) | ✅ |
-| GitHub Actions CI/CD-pipeline (`.github/workflows/pipeline.yml`) | ✅ |
-| Docker-configuratie (`.docker/Dockerfile`, compose-bestanden) | ✅ |
-| OpenMRS Core platform (1.9.9) | ❌ Buiten scope |
-| Serverinfrastructuur / netwerk / TLS | ❌ Buiten scope |
-| GitHub-organisatiebeheer | ❌ Buiten scope |
-| Productiedatabase en -omgeving | ❌ Buiten scope |
+| Component                                                        | In scope        |
+| ---------------------------------------------------------------- | --------------- |
+| Module-broncode (`api/`, `omod/`)                                | ✅              |
+| GitHub Actions CI/CD-pipeline (`.github/workflows/pipeline.yml`) | ✅              |
+| Docker-configuratie (`.docker/Dockerfile`, compose-bestanden)    | ✅              |
+| OpenMRS Core platform (1.9.9)                                    | ❌ Buiten scope |
+| Serverinfrastructuur / netwerk / TLS                             | ❌ Buiten scope |
+| GitHub-organisatiebeheer                                         | ❌ Buiten scope |
+| Productiedatabase en -omgeving                                   | ❌ Buiten scope |
 
 ### 2.2 Wat is buiten scope
 
@@ -64,14 +64,14 @@ De volgende categorieën zijn bewust buiten scope geplaatst, conform `07-securit
 
 ### 2.3 Toepasselijk normenkader
 
-| Norm/wet | Reikwijdte |
-|---|---|
-| NEN-7510:2024 Deel 2 | Primair kader — informatiebeveiliging in de zorg (controls A.8.x, A.9.x) |
-| CRA (Cyber Resilience Act) | Aanvullend — leveranciersverplichtingen voor producten met digitale elementen |
+| Norm/wet                             | Reikwijdte                                                                         |
+| ------------------------------------ | ---------------------------------------------------------------------------------- |
+| NEN-7510:2024 Deel 2                 | Primair kader - informatiebeveiliging in de zorg (controls A.8.x, A.9.x)           |
+| CRA (Cyber Resilience Act)           | Aanvullend - leveranciersverplichtingen voor producten met digitale elementen      |
 | AVG / GDPR (Verordening EU 2016/679) | Privacy- en logging-gerelateerde controls; art. 9 voor bijzondere persoonsgegevens |
-| OWASP Top 10 (2021) | Referentie voor penetratietest-bevindingen |
-| CVSS v3.1 | Scoringsmethodologie voor kwetsbaarheidsbeoordeling |
-| ISO/IEC 27005:2022 | Risicomanagementmethode (basis voor risicomatrix) |
+| OWASP Top 10 (2021)                  | Referentie voor penetratietest-bevindingen                                         |
+| CVSS v3.1                            | Scoringsmethodologie voor kwetsbaarheidsbeoordeling                                |
+| ISO/IEC 27005:2022                   | Risicomanagementmethode (basis voor risicomatrix)                                  |
 
 ---
 
@@ -79,16 +79,17 @@ De volgende categorieën zijn bewust buiten scope geplaatst, conform `07-securit
 
 > **Hoe is getest:** combinatie van statische broncode-analyse, geautomatiseerde pipeline-scanning en dynamische validatie op een draaiende Docker dev-omgeving.
 
-| Techniek | Tool | Wanneer | Resultaat (verwijzing) |
-|---|---|---|---|
-| Gap-analyse | Handmatig / NEN-7510 controls checklist | Sprint 1 (SOF-22) | Bijlage A — `01-gap-analyse.md` + `13-gap-analyse-logging.md` |
-| SAST | SonarQube (pipeline) + handmatige code review | Bij elke PR + eindmeting sprint 3 | Bijlage D — SonarQube export |
-| SCA / CVE-scan | OWASP Dependency Check + Trivy (container) | Wekelijks + eindmeting | Bijlage G — OWASP/Trivy rapport |
-| Secret scanning | Gitleaks (pipeline, sprint 2) | Bij elke commit | Pipeline-log |
-| SBOM-generatie | CycloneDX Maven Plugin | Build-tijd | `docs/sbom.cdx.json` — Bijlage C |
-| Risicoanalyse | ISO 27005 methode (kans × impact 1–5) | Sprint 2 (SOF-35/SOF-27) | Bijlage E — `05-risicomatrix.md` |
-| Threat modelling | Microsoft TMT (C4-gebaseerd, bow-tie) | Sprint 2/3 (SOF-38, SOF-42) | Bijlage F — `06-bowtie.md` |
-| Penetration testing | White-box SAST + dynamische validatie op Docker-omgeving | Sprint 3 (SOF-47) | Bijlage J — `14-pentest-rapport.md` |
+| Techniek            | Tool                                                                                       | Wanneer                           | Resultaat (verwijzing)                                            |
+| ------------------- | ------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------------------- |
+| Gap-analyse         | Handmatig / NEN-7510 controls checklist                                                    | Sprint 1 (SOF-22)                 | Bijlage A — `01-gap-analyse.md` + `13-gap-analyse-logging.md`     |
+| SAST                | CodeQL (`security-extended`, pipeline) + SonarQube (quality gate) + handmatige code review | Bij elke PR + eindmeting sprint 3 | Bijlage D — CodeQL/SonarQube export                               |
+| Codekwaliteit       | Qodana (JetBrains, pipeline)                                                               | Bij elke PR                       | Qodana quality gate resultaat                                     |
+| SCA / CVE-scan      | Snyk (dependencies, CVSS ≥ 7) + Trivy (container image)                                    | Bij elke build + eindmeting       | Bijlage G — Snyk + Trivy rapport                                  |
+| Secret scanning     | Gitleaks (pipeline, sprint 2)                                                              | Bij elke commit                   | Pipeline-log                                                      |
+| SBOM-generatie      | CycloneDX Maven Plugin                                                                     | Build-tijd                        | `sbom/sbom-{versie}-{datum}.json` (pipeline-artifact) — Bijlage C |
+| Risicoanalyse       | ISO 27005 methode (kans × impact 1–5)                                                      | Sprint 2 (SOF-35/SOF-27)          | Bijlage E — `05-risicomatrix.md`                                  |
+| Threat modelling    | Microsoft TMT (C4-gebaseerd, bow-tie)                                                      | Sprint 2/3 (SOF-38, SOF-42)       | Bijlage F — `06-bowtie.md`                                        |
+| Penetration testing | White-box SAST + dynamische validatie op Docker-omgeving                                   | Sprint 3 (SOF-47)                 | Bijlage J — `14-pentest-rapport.md`                               |
 
 ---
 
@@ -104,7 +105,7 @@ De volgende categorieën zijn bewust buiten scope geplaatst, conform `07-securit
 ┌─────────────────────────────────────────────────────────────────┐
 │ Bevinding ID:        R01                                          │
 │ Titel:               PII in logbestanden                          │
-│ Datum gevonden:      April 2026 (sprint 1, SOF-22)                │
+│ Datum gevonden:      Juni 2026 (sprint 1, SOF-22)                │
 │ Status:              ✅ Opgelost                                  │
 ├─────────────────────────────────────────────────────────────────┤
 │ CVSS-score:          6.5 (Medium)                                 │
@@ -135,6 +136,7 @@ De volgende categorieën zijn bewust buiten scope geplaatst, conform `07-securit
 ```
 
 **Uitgevoerde fix:**
+
 ```java
 // Vóór (❌):
 log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonName()
@@ -154,7 +156,7 @@ log.info("[AUDIT] appointment.read | user={} | patientUuid={} | result=SUCCESS",
 ┌─────────────────────────────────────────────────────────────────┐
 │ Bevinding ID:        R02                                          │
 │ Titel:               Hardcoded credentials in broncode            │
-│ Datum gevonden:      April 2026 (sprint 1, SOF-22)                │
+│ Datum gevonden:      Juni 2026 (sprint 1, SOF-22)                │
 │ Status:              ✅ Opgelost (code) — ⚠️ wachtwoord te roteren│
 ├─────────────────────────────────────────────────────────────────┤
 │ CVSS-score:          9.8 (Critical)                               │
@@ -186,18 +188,15 @@ log.info("[AUDIT] appointment.read | user={} | patientUuid={} | result=SUCCESS",
 ```
 
 **Uitgevoerde fix:**
+
+De volledige `getHL7ExportUrl()`-methode is verwijderd uit `AppointmentActivator.java`. De methode was dode code (nergens aangeroepen) en bevatte een hardcoded JDBC-verbindingsstring met wachtwoord. Verwijdering was de veiligste oplossing.
+
 ```java
-// Vóór (❌):
+// Vóór (❌): dode methode met hardcoded credentials
 private static final String HL7_EXPORT_PASSWORD = "Appt@Export2021!";
 private static final String HL7_DB_URL = "jdbc:mysql://hl7-reports.hospital.internal:3306/...";
 
-// Na (✅):
-private String getHL7ExportUrl() {
-    String host = Context.getRuntimeProperties().getProperty("hl7.export.host", "hl7-reports.hospital.internal");
-    String user = Context.getRuntimeProperties().getProperty("hl7.export.user", "appt_export_svc");
-    String password = Context.getRuntimeProperties().getProperty("hl7.export.password", "");
-    return "jdbc:mysql://" + host + ":3306/appointments?user=" + user + "&password=" + password;
-}
+// Na (✅): methode volledig verwijderd — geen vervanging nodig (dode code)
 ```
 
 ---
@@ -208,7 +207,7 @@ private String getHL7ExportUrl() {
 ┌─────────────────────────────────────────────────────────────────┐
 │ Bevinding ID:        R03                                          │
 │ Titel:               Geen data-level toegangscontrole (IDOR)      │
-│ Datum gevonden:      April 2026 (sprint 1, SOF-22)                │
+│ Datum gevonden:      Juni 2026 (sprint 1, SOF-22)                │
 │ Status:              ✅ Opgelost                                  │
 ├─────────────────────────────────────────────────────────────────┤
 │ CVSS-score:          7.1 (High)                                   │
@@ -240,6 +239,7 @@ private String getHL7ExportUrl() {
 ```
 
 **Uitgevoerde fix** (AppointmentResource1_9.java, methode `doSearch()`):
+
 ```java
 // ACL: niet-admins mogen alleen afspraken zien waar zij zelf de provider zijn
 User currentUser = Context.getAuthenticatedUser();
@@ -266,7 +266,7 @@ if (!currentUser.isSuperUser()) {
 │ Bevinding ID:        R04                                          │
 │ Titel:               Typfout in privilege-constanten (checks       │
 │                      werken nooit correct)                         │
-│ Datum gevonden:      April 2026 (sprint 1)                         │
+│ Datum gevonden:      Juni 2026 (sprint 1)                         │
 │ Status:              ✅ Opgelost                                  │
 ├─────────────────────────────────────────────────────────────────┤
 │ CVSS-score:          8.1 (High)                                   │
@@ -337,6 +337,7 @@ if (!currentUser.isSuperUser()) {
 ```
 
 **Uitgevoerde fix:**
+
 ```java
 // Vóór (❌): stringconcatenatie
 String hql = "from Appointment ap where ap.visit.patient.personName.givenName = '"
@@ -394,46 +395,47 @@ return super.sessionFactory.getCurrentSession().createQuery(hql)
 
 ### Overzichtstabel bevindingen
 
-| ID | Titel | CVSS | Contextuele score | NEN-7510 | Status |
-|---|---|---|---|---|---|
-| R01 | PII in logbestanden | 6.5 Medium | 8.5 Hoog | A.8.15 | ✅ Opgelost |
-| R02 | Hardcoded credentials | 9.8 Critical | 10.0 Kritiek | A.9.2 | ✅ Opgelost (roteren!) |
-| R03 | Geen data-level ACL (IDOR) | 7.1 High | 9.0 Hoog | A.8.3 | ✅ Opgelost |
-| R04 | Typfout privilege-constanten | 8.1 High | 8.0 Hoog | A.8.3 | ✅ Opgelost |
-| R05 | Lege `@Authorized()` annotaties | 6.4 Medium | 6.5 Midden | A.8.3 | ✅ Opgelost |
-| R07 | Geen auditlogging afspraakmutaties | 5.3 Medium | 6.0 Midden | A.8.15 | ✅ Opgelost |
-| R09 | ConcurrentModificationException | 4.3 Medium | 4.0 Midden | A.8.6 | ✅ Opgelost |
-| R11 | `void`/`retire`-vlaggen niet gezet | 5.3 Medium | 5.0 Midden | A.8.6 | ✅ Opgelost |
-| R13 | HQL-injectie (dode code) | 5.9 Medium | 4.0 Midden | A.8.24 | ✅ Opgelost |
-| R14 | SQL Injection (native queries) | 7.5 High | 6.0 Midden | A.8.24 | ✅ Opgelost |
-| CICD-03 | SonarQube blokkeert nooit | — | Kritiek | A.8.25 | ✅ Opgelost |
-| CICD-04 | Geen secret scanning (gitleaks) | — | Kritiek | A.8.25 | ✅ Opgelost |
-| CICD-05 | Geen SCA/CVE-scan | — | Hoog | A.8.8 | ✅ Opgelost |
-| CICD-06 | Niet-gepinde GitHub Actions | — | Midden | A.8.9 | 📋 Gepland |
-| PT-08 | XSS via JSP-expressies | 4.8 Medium | 3.0 Laag | A.8.24 | 🔕 Geaccepteerd |
+| ID      | Titel                              | CVSS         | Contextuele score | NEN-7510 | Status                 |
+| ------- | ---------------------------------- | ------------ | ----------------- | -------- | ---------------------- |
+| R01     | PII in logbestanden                | 6.5 Medium   | 8.5 Hoog          | A.8.15   | ✅ Opgelost            |
+| R02     | Hardcoded credentials              | 9.8 Critical | 10.0 Kritiek      | A.9.2    | ✅ Opgelost (roteren!) |
+| R03     | Geen data-level ACL (IDOR)         | 7.1 High     | 9.0 Hoog          | A.8.3    | ✅ Opgelost            |
+| R04     | Typfout privilege-constanten       | 8.1 High     | 8.0 Hoog          | A.8.3    | ✅ Opgelost            |
+| R05     | Lege `@Authorized()` annotaties    | 6.4 Medium   | 6.5 Midden        | A.8.3    | ✅ Opgelost            |
+| R07     | Geen auditlogging afspraakmutaties | 5.3 Medium   | 6.0 Midden        | A.8.15   | ✅ Opgelost            |
+| R09     | ConcurrentModificationException    | 4.3 Medium   | 4.0 Midden        | A.8.6    | ✅ Opgelost            |
+| R11     | `void`/`retire`-vlaggen niet gezet | 5.3 Medium   | 5.0 Midden        | A.8.6    | ✅ Opgelost            |
+| R13     | HQL-injectie (dode code)           | 5.9 Medium   | 4.0 Midden        | A.8.24   | ✅ Opgelost            |
+| R14     | SQL Injection (native queries)     | 7.5 High     | 6.0 Midden        | A.8.24   | ✅ Opgelost            |
+| CICD-03 | SonarQube blokkeert nooit          | —            | Kritiek           | A.8.25   | ⚠️ Gedeeltelijk        |
+| CICD-04 | Geen secret scanning (gitleaks)    | —            | Kritiek           | A.8.25   | ✅ Opgelost            |
+| CICD-05 | Geen SCA/CVE-scan                  | —            | Hoog              | A.8.8    | ✅ Opgelost            |
+| CICD-06 | Niet-gepinde GitHub Actions        | —            | Midden            | A.8.9    | 📋 Gepland             |
+| PT-08   | XSS via JSP-expressies             | 4.8 Medium   | 3.0 Laag          | A.8.24   | 🔕 Geaccepteerd        |
 
 ---
 
 ## 5. SBOM & Supply Chain Security
 
-> **Bronmateriaal:** `docs/sbom.cdx.json`, OWASP Dependency Check + Trivy scanresultaten (bijlage G). Zie bijlage C voor de volledige CycloneDX JSON.
+> **Bronmateriaal:** `sbom/sbom-{versie}-{datum}.json` (pipeline-artifact GitHub Actions), Snyk + Trivy scanresultaten (bijlage G). Zie bijlage C voor de volledige CycloneDX JSON.
 
-| Component | Versie | Licentie | Bekende CVE's | Status |
-|---|---|---|---|---|
-| OpenMRS Core | 1.9.9 | MPL 2.0 | Meerdere (platform EOL — buiten scope) | ⚠️ EOL — platformverantwoordelijkheid |
-| Java Runtime (Zulu JRE 7) | 7.x | Various | Geen security-updates meer (Java 7 EOL) | ⚠️ EOL — platformvereiste OpenMRS 1.9.9 |
-| Tomcat | 8.0.53 | Apache 2.0 | CVE-2020-9484 (laag risico in config) | Laatste Java-7-compatibele release |
-| Spring Framework | [zie sbom] | Apache 2.0 | [zie OWASP rapport — bijlage G] | [zie scan] |
-| Hibernate ORM | [zie sbom] | LGPL 2.1 | [zie OWASP rapport — bijlage G] | [zie scan] |
-| openmrs-api | 1.9.9 | MPL 2.0 | Platform-CVE's buiten scope | ⚠️ EOL |
-| openmrs-module-webservices.rest | 2.5.e52eb0 | MPL 2.0 | [zie OWASP rapport] | [zie scan] |
-| Apache Commons Logging | [zie sbom] | Apache 2.0 | — | OK |
-| Log4j (transitief) | [zie sbom] | Apache 2.0 | CVE-2021-44228 Log4Shell | [zie Trivy scan — bijlage G] |
-| MySQL Connector/J | [zie sbom] | GPL 2.0 | [zie OWASP rapport] | [zie scan] |
+| Component                       | Versie     | Licentie   | Bekende CVE's                           | Status                                  |
+| ------------------------------- | ---------- | ---------- | --------------------------------------- | --------------------------------------- |
+| OpenMRS Core                    | 1.9.9      | MPL 2.0    | Meerdere (platform EOL — buiten scope)  | ⚠️ EOL — platformverantwoordelijkheid   |
+| Java Runtime (Zulu JRE 7)       | 7.x        | Various    | Geen security-updates meer (Java 7 EOL) | ⚠️ EOL — platformvereiste OpenMRS 1.9.9 |
+| Tomcat                          | 8.0.53     | Apache 2.0 | CVE-2020-9484 (laag risico in config)   | Laatste Java-7-compatibele release      |
+| Spring Framework                | [zie sbom] | Apache 2.0 | [zie Snyk rapport — bijlage G]          | [zie scan]                              |
+| Hibernate ORM                   | [zie sbom] | LGPL 2.1   | [zie Snyk rapport — bijlage G]          | [zie scan]                              |
+| openmrs-api                     | 1.9.9      | MPL 2.0    | Platform-CVE's buiten scope             | ⚠️ EOL                                  |
+| openmrs-module-webservices.rest | 2.5.e52eb0 | MPL 2.0    | [zie Snyk rapport]                      | [zie scan]                              |
+| Apache Commons Logging          | [zie sbom] | Apache 2.0 | —                                       | OK                                      |
+| Log4j (transitief)              | [zie sbom] | Apache 2.0 | CVE-2021-44228 Log4Shell                | [zie Trivy scan — bijlage G]            |
+| MySQL Connector/J               | [zie sbom] | GPL 2.0    | [zie Snyk rapport]                      | [zie scan]                              |
 
-> **Let op:** Vul de versienummers in uit `docs/sbom.cdx.json` (bijlage C) en koppel de CVE-bevindingen uit het OWASP Dependency Check rapport (bijlage G). Log4Shell is bijzonder relevant gezien het logging-framework in de module.
+> **Let op:** Vul de versienummers in uit het SBOM-artifact (`sbom/sbom-{versie}-{datum}.json`, bijlage C) en koppel de CVE-bevindingen uit het Snyk rapport (bijlage G). Log4Shell is bijzonder relevant gezien het logging-framework in de module.
 
 **Relevante NEN-7510 controls:**
+
 - A.8.8 — Beheer van technische kwetsbaarheden (dependency-updates)
 - A.5.22 — Monitoring leveranciers (EOL-risico's OpenMRS, Java 7)
 
@@ -454,17 +456,18 @@ Na uitvoering van alle P1- en P2-maatregelen (R01–R14, CICD-03/04/05) zijn de 
 - **R02 wachtwoordrotatie** — code-fix is gedaan, maar het gelekte wachtwoord staat nog in 7 git-commits
 
 De module is **niet productierijp** zolang:
+
 1. Het wachtwoord `Appt@Export2021!` niet geroteerd is
 2. De platformrisico's (EOL) niet zijn geadresseerd
 
 ### Prioritering van aanbevelingen
 
-| Prioriteit | Criterium | Actie |
-|---|---|---|
-| 🔴 Nu | Wachtwoord in 7 git-commits — gecompromitteerd | Roteer `Appt@Export2021!` op de externe HL7-database direct |
-| 🟠 Deze sprint | CICD-06 open — supply chain risico | Pin alle GitHub Actions op SHA-hashes (zie backlog sprint 4) |
-| 🟢 Later | Platform-EOL — verantwoordelijkheid opdrachtgever | Upgrade roadmap OpenMRS 2.x + Java 8/11 bespreken met beheerder |
-| 🟢 Later | PT-08 XSS geaccepteerd — beperkt aanvalsvlak | Escapen met `fn:escapeXml()` bij volgende UI-refactor |
+| Prioriteit     | Criterium                                         | Actie                                                           |
+| -------------- | ------------------------------------------------- | --------------------------------------------------------------- |
+| 🔴 Nu          | Wachtwoord in 7 git-commits — gecompromitteerd    | Roteer `Appt@Export2021!` op de externe HL7-database direct     |
+| 🟠 Deze sprint | CICD-06 open — supply chain risico                | Pin alle GitHub Actions op SHA-hashes (zie backlog sprint 4)    |
+| 🟢 Later       | Platform-EOL — verantwoordelijkheid opdrachtgever | Upgrade roadmap OpenMRS 2.x + Java 8/11 bespreken met beheerder |
+| 🟢 Later       | PT-08 XSS geaccepteerd — beperkt aanvalsvlak      | Escapen met `fn:escapeXml()` bij volgende UI-refactor           |
 
 ---
 
@@ -472,21 +475,21 @@ De module is **niet productierijp** zolang:
 
 > Elke bijlage is vanuit de hoofdtekst gerefereerd. Een bijlage zonder referentie heeft geen auditwaarde.
 
-| Bijlage | Inhoud | Bronbestand |
-|---|---|---|
-| A | Gap-analyse (sprint 1 + re-evaluatie sprint 3) | `01-gap-analyse.md`, `13-gap-analyse-logging.md` |
-| B | Traceability matrix | Zie sectie 9 hieronder |
-| C | SBOM (CycloneDX JSON) | `docs/sbom.cdx.json` |
-| D | SAST-output (SonarQube) | [SonarQube quality gate export — bij elke PR in pipeline] |
-| E | Risicomatrix | `05-risicomatrix.md` |
-| F | Bow-tie diagrammen / threat models | `06-bowtie.md`, `10-cicd-bowtie.md`, `12-attack-surface.md` |
-| G | OWASP Dependency Check + Trivy rapport | [pipeline-artifact — sprint 2/3] |
-| H | CRA-mapping | Zie sectie 8 hieronder |
-| I | Security backlog / geprioriteerde verbeteraanpak | `07-security-backlog.md` |
-| J | Penetration test rapport + PoC's | `14-pentest-rapport.md` |
-| K | Asset-identificatie | `03-assets.md` |
-| L | Risicocriteria | `04-risicocriteria.md` |
-| M | Bronnen (CVE-referenties, normreferenties, tools) | Zie onderkant dit document |
+| Bijlage | Inhoud                                                                                                        | Bronbestand                                                           |
+| ------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| A       | Gap-analyse — sprint 1 (juni 2026) + re-evaluatie sprint 3 (18 juni 2026)                                     | `01-gap-analyse.md`, `13-gap-analyse-logging.md`                      |
+| B       | Traceability matrix (dit document, §9)                                                                        | Zie sectie 9 hieronder                                                |
+| C       | SBOM (CycloneDX JSON) — gegenereerd per CI-run; eindmeting sprint 3 (juni 2026)                               | `sbom/sbom-{versie}-{datum}.json` (pipeline-artifact, GitHub Actions) |
+| D       | SAST-output — CodeQL security-extended scan (eindmeting PR #22, 19 juni 2026) + SonarQube quality gate export | GitHub Actions artifact "codeql-results" + SonarQube dashboard        |
+| E       | Risicomatrix — sprint 2 (juni 2026) + update sprint 3 (18 juni 2026)                                          | `05-risicomatrix.md`                                                  |
+| F       | Bow-tie diagrammen / threat models — sprint 2/3 (juni 2026)                                                   | `06-bowtie.md`, `10-cicd-bowtie.md`, `12-attack-surface.md`           |
+| G       | Snyk dependency-scan + Trivy container-scan — pipeline-artifact PR #19 (18 juni 2026)                         | GitHub Actions artifact, pipeline-run 18 juni 2026                    |
+| H       | CRA-mapping                                                                                                   | Zie sectie 8 hieronder                                                |
+| I       | Security backlog / geprioriteerde verbeteraanpak                                                              | `07-security-backlog.md`                                              |
+| J       | Penetration test rapport + PoC's — sprint 3 (juni 2026)                                                       | `14-pentest-rapport.md`                                               |
+| K       | Asset-identificatie                                                                                           | `03-assets.md`                                                        |
+| L       | Risicocriteria                                                                                                | `04-risicocriteria.md`                                                |
+| M       | Bronnen (CVE-referenties, normreferenties, tools)                                                             | Zie onderaan dit document                                             |
 
 ---
 
@@ -494,15 +497,15 @@ De module is **niet productierijp** zolang:
 
 > Bron: CRA (Cyber Resilience Act, 2024) vs. NEN-7510:2024-2 controls. Zie ook `07-security-backlog.md`.
 
-| CRA-verplichting | NEN-7510:2024-2 control | Status in dit project |
-|---|---|---|
-| Software leveren zonder bekende (actieve) kwetsbaarheden | A.8.8 — Beheer van technische kwetsbaarheden | ⚠️ Platform-CVE's (EOL) buiten scope; module-CVE's gemitigeerd |
-| SBOM beschikbaar stellen aan gebruikers | A.8.8 + A.5.22 — Monitoring leveranciers | ✅ `docs/sbom.cdx.json` aanwezig + OWASP/Trivy scan |
-| Beveiligingsupdates leveren gedurende de levensduur | A.8.8 — Patch management | ⚠️ Java 7 / OpenMRS 1.9.9 EOL — geen updates meer beschikbaar |
-| Secure by design | A.8.25 — Beveiligd ontwikkelproces | ✅ Gitleaks + OWASP gate + SonarQube in pipeline |
-| Actief misbruikte kwetsbaarheden melden aan ENISA | A.6.8 — Rapportage van beveiligingsgebeurtenissen | ✅ Responsible disclosure procedure (sectie 10) |
-| Logging en monitoring ondersteunen | A.8.15 — Logregistratie + A.8.16 — Monitoringactiviteiten | ✅ Auditlogging toegevoegd (R01/R07 opgelost) |
-| Toegangscontrole voor beheerinterfaces | A.8.2 — Beheer van bevoorrechte toegangsrechten | ✅ ACL toegevoegd (R03); lege @Authorized hersteld (R05) |
+| CRA-verplichting                                         | NEN-7510:2024-2 control                                   | Status in dit project                                                                    |
+| -------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Software leveren zonder bekende (actieve) kwetsbaarheden | A.8.8 — Beheer van technische kwetsbaarheden              | ⚠️ Platform-CVE's (EOL) buiten scope; module-CVE's gemitigeerd                           |
+| SBOM beschikbaar stellen aan gebruikers                  | A.8.8 + A.5.22 — Monitoring leveranciers                  | ✅ `sbom/sbom-{versie}-{datum}.json` aanwezig (pipeline-artifact) + Snyk + Trivy scan    |
+| Beveiligingsupdates leveren gedurende de levensduur      | A.8.8 — Patch management                                  | ⚠️ Java 7 / OpenMRS 1.9.9 EOL — geen updates meer beschikbaar                            |
+| Secure by design                                         | A.8.25 — Beveiligd ontwikkelproces                        | ✅ Gitleaks + Snyk + Trivy gates in pipeline (SonarQube soft gate — free plan beperking) |
+| Actief misbruikte kwetsbaarheden melden aan ENISA        | A.6.8 — Rapportage van beveiligingsgebeurtenissen         | ✅ Responsible disclosure procedure (sectie 10)                                          |
+| Logging en monitoring ondersteunen                       | A.8.15 — Logregistratie + A.8.16 — Monitoringactiviteiten | ✅ Auditlogging toegevoegd (R01/R07 opgelost)                                            |
+| Toegangscontrole voor beheerinterfaces                   | A.8.2 — Beheer van bevoorrechte toegangsrechten           | ✅ ACL toegevoegd (R03); lege @Authorized hersteld (R05)                                 |
 
 ---
 
@@ -511,13 +514,13 @@ De module is **niet productierijp** zolang:
 > **Vereiste:** minimaal 5 NEN-7510:2024-2 controls. Elk "Na"-bewijs is een verifieerbaar artefact.
 > **Valkuilen vermeden:** specifieke control-nummers gebruikt; bronverwijzingen met datum; PR/bestand-referentie bij aanpassing; geen ongefundeerde claims.
 
-| Norm | Maatregel | Vóór (bevinding) | Aanpassing | Na (bewijs) |
-|---|---|---|---|---|
-| NEN-7510 A.8.15 — Logregistratie | PII verwijderen uit logstatement; gestructureerde auditlogging toevoegen | R01: `AppointmentServiceImpl.java` r.1426–1432 logde naam, DOB, patiënt-ID, geslacht (april 2026, `01-gap-analyse.md`) | Fix in `AppointmentServiceImpl.java`: PII vervangen door `patient.getUuid()`; [AUDIT]-logging toegevoegd voor alle mutatiemethoden (R07 gecombineerd) | `AppointmentServiceImpl.java` (huidig): `log.info("[AUDIT] appointment.read | user={} | patientUuid={}")` — grep-check bevestigt geen `getPersonName()`, `getBirthdate()`, `getGender()` in log-aanroepen |
-| NEN-7510 A.9.2 — Beheer gebruikerstoegang | Hardcoded credentials vervangen door runtime properties | R02: `AppointmentActivator.java` r.79–82 bevatte `Appt@Export2021!` hardcoded (april 2026); pentest PT-02 bevestigde wachtwoord in 7 git-commits (juni 2026) | Fix in `AppointmentActivator.java`: constanten verwijderd; waarden via `Context.getRuntimeProperties().getProperty(...)` | `AppointmentActivator.java` r.79–82 (huidig): geen literal `Appt@Export2021!`; `getHL7ExportUrl()` leest uit runtime properties — gitleaks-scan in pipeline detecteert geen nieuwe secrets |
-| NEN-7510 A.8.3 — Toegangsbeveiliging | Data-level ACL toevoegen; typfout in privilege-constanten herstellen | R03: `doSearch()` in `AppointmentResource1_9.java` — geen eigenaarcheck (april 2026); R04: `AppointmentUtils.java` r.29–31: "Scedules" i.p.v. "Schedules" — privilege-checks faalden altijd (pentest PT-04 bevestigd juni 2026) | R03 fix: ACL-blok toegevoegd in `doSearch()` — niet-superusers krijgen eigen provider als filter; R04 fix: spelling hersteld naar "View Provider Schedules" in `AppointmentUtils.java` | `AppointmentResource1_9.java` r.199–213 (huidig): ACL-code aanwezig; `AppointmentUtils.java` (huidig): correcte spelling — runtime-foutmelding toont niet langer "Scedules" |
-| NEN-7510 A.8.24 — Veilige coderingspraktijken | HQL-injectie via stringconcatenatie elimineren; alle native queries verificeren | R13: `HibernateAppointmentDAO.java` r.317 — `patientName` geconcateneerd in HQL-query (sprint 3, SOF-47); R14: native SQL in `getAppointmentDailyCount()` — codeaudit gestart | R13 fix: `searchAppointmentsByPatientName()` herschreven met `.setParameter("name", patientName)`; R14 verificatie: `getAppointmentDailyCount()` gebruikt positionale `?` parameters — veilig bevonden | `HibernateAppointmentDAO.java` r.315–320 (huidig): `createQuery(hql).setParameter("name", patientName)` — geen stringconcatenatie; grep-check bevestigt geen `createQuery.*+` patroon in DAO-laag |
-| NEN-7510 A.8.25 — Beveiligd ontwikkelproces | SAST-gate afdwingen; secret scanning toevoegen | CICD-03: pipeline had `continue-on-error: true` op SonarQube — security gate was decoratief (score 20, sprint 2); CICD-04: geen gitleaks in pipeline — R02 had gedetecteerd moeten worden | CICD-03: `continue-on-error` verwijderd op `release/*` en `main`; CICD-04: `gitleaks/gitleaks-action` toegevoegd als eerste job; `build-and-test` is hiervan afhankelijk | `.github/workflows/pipeline.yml` (huidig): `secret-scan` job is eerste stap; `continue-on-error` ontbreekt op main/release branches — pipeline logt gitleaks-bevindingen bij elke commit |
+| Norm                                          | Maatregel                                                                       | Vóór (bevinding)                                                                                                                                                                                                                | Aanpassing                                                                                                                                                                                                                                                                                                       | Na (bewijs)                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NEN-7510 A.8.15 — Logregistratie              | PII verwijderen uit logstatement; gestructureerde auditlogging toevoegen        | R01: `AppointmentServiceImpl.java` r.1426–1432 logde naam, DOB, patiënt-ID, geslacht (april 2026, `01-gap-analyse.md`)                                                                                                          | Fix in `AppointmentServiceImpl.java`: PII vervangen door `patient.getUuid()`; [AUDIT]-logging toegevoegd voor alle mutatiemethoden (R07 gecombineerd)                                                                                                                                                            | commit `d0b2a56` (PR #14, 15 juni 2026): `AppointmentServiceImpl.java` — `log.info("[AUDIT] appointment.read \| user={} \| patientUuid={}")`aanwezig;`getPersonName()`, `getBirthdate()`, `getGender()` afwezig in alle log-aanroepen (grep-check)                                                                                                                                                                                        |
+| NEN-7510 A.9.2 — Beheer gebruikerstoegang     | Hardcoded credentials vervangen door runtime properties                         | R02: `AppointmentActivator.java` r.79–82 bevatte `Appt@Export2021!` hardcoded (april 2026); pentest PT-02 bevestigde wachtwoord in 7 git-commits (juni 2026)                                                                    | Fix in `AppointmentActivator.java`: constanten verwijderd; waarden via `Context.getRuntimeProperties().getProperty(...)`                                                                                                                                                                                         | commits `6d56c88` + `4e37acd` (18–19 juni 2026, branch SOF-54): `AppointmentActivator.java` — literal `Appt@Export2021!` afwezig; volledige `getHL7ExportUrl()`-methode verwijderd (dode code); gitleaks pipeline-job detecteert geen nieuwe secrets                                                                                                                                                                                      |
+| NEN-7510 A.8.3 — Toegangsbeveiliging          | Data-level ACL toevoegen; typfout in privilege-constanten herstellen            | R03: `doSearch()` in `AppointmentResource1_9.java` — geen eigenaarcheck (april 2026); R04: `AppointmentUtils.java` r.29–31: "Scedules" i.p.v. "Schedules" — privilege-checks faalden altijd (pentest PT-04 bevestigd juni 2026) | R03 fix: ACL-blok toegevoegd in `doSearch()` — niet-superusers krijgen eigen provider als filter; R04 fix: spelling hersteld naar "View Provider Schedules" in `AppointmentUtils.java`                                                                                                                           | R03: commit `4e37acd` (PR #22, SOF-55, 19 juni 2026): ACL-blok aanwezig in `AppointmentResource1_9.java` r.199–213; R04: commit `adbe6bf` (18 juni 2026): "Schedules" correct gespeld in `AppointmentUtils.java` — runtime-foutmelding toont niet langer "Scedules"                                                                                                                                                                       |
+| NEN-7510 A.8.24 — Veilige coderingspraktijken | HQL-injectie via stringconcatenatie elimineren; alle native queries verificeren | R13: `HibernateAppointmentDAO.java` r.317 — `patientName` geconcateneerd in HQL-query (sprint 3, SOF-47); R14: native SQL in `getAppointmentDailyCount()` — codeaudit gestart                                                   | R13 fix: `searchAppointmentsByPatientName()` herschreven met `.setParameter("name", patientName)`; R14 verificatie: `getAppointmentDailyCount()` gebruikt positionale `?` parameters — veilig bevonden                                                                                                           | commit `6d56c88` (18 juni 2026, branch SOF-54): `HibernateAppointmentDAO.java` — `createQuery(hql).setParameter("name", patientName)` aanwezig; grep-check codebase bevestigt geen `createQuery.*+` patroon (geen stringconcatenatie in DAO-laag)                                                                                                                                                                                         |
+| NEN-7510 A.8.25 — Beveiligd ontwikkelproces   | SAST-gate afdwingen; secret scanning toevoegen                                  | CICD-03: pipeline had `continue-on-error: true` op SonarQube — security gate was decoratief (score 20, sprint 2); CICD-04: geen gitleaks in pipeline — R02 had gedetecteerd moeten worden                                       | CICD-03: SonarQube-stap behoudt `continue-on-error: true` (SonarCloud free plan — hard blocking gate niet beschikbaar); harde gates toegevoegd via Snyk (CVSS ≥ 7) en Trivy (CRITICAL/HIGH in container); CICD-04: `gitleaks/gitleaks-action` toegevoegd als eerste job; `build-and-test` is hiervan afhankelijk | CICD-04 ✅: PR #19 (commit `39666a5`, Vulnerability-fixes, 18 juni 2026): `pipeline.yml` — `secret-scan` als eerste job, Gitleaks blokkeert bij gevonden secrets op elke branch. CICD-03 ⚠️ gedeeltelijk: SonarQube `continue-on-error: true` blijft aanwezig (free plan beperking); mitigatie via harde Snyk-gate en Trivy-gate in dezelfde pipeline; CodeQL SAST (`codeql.yml`) triggert op elke push/PR naar main, develop, release/\* |
 
 ---
 
@@ -528,13 +531,13 @@ De module is **niet productierijp** zolang:
 
 Voor de vastgestelde kwetsbaarheden in de eigen module is het volgende proces gevolgd:
 
-| Stap | Status | Datum |
-|---|---|---|
-| 1. Kwetsbaarheden gedocumenteerd met beschrijving, bestand, regelnummer, reproduceerbare PoC | ✅ Gedaan | April–juni 2026 (`14-pentest-rapport.md`) |
-| 2. Contact opgenomen met vendor/CERT | N.v.t. — eigen module | — |
-| 3. Hersteltermijn afgesproken | N.v.t. — intern opgelost | — |
-| 4. Coördinatie via NCSC/CERT-CC | N.v.t. | — |
-| 5. Fixes intern doorgevoerd; bevindingen gedocumenteerd in dit rapport | ✅ Gedaan | Juni 2026 |
+| Stap                                                                                         | Status                   | Datum                               |
+| -------------------------------------------------------------------------------------------- | ------------------------ | ----------------------------------- |
+| 1. Kwetsbaarheden gedocumenteerd met beschrijving, bestand, regelnummer, reproduceerbare PoC | ✅ Gedaan                | Juni 2026 (`14-pentest-rapport.md`) |
+| 2. Contact opgenomen met vendor/CERT                                                         | N.v.t. — eigen module    | —                                   |
+| 3. Hersteltermijn afgesproken                                                                | N.v.t. — intern opgelost | —                                   |
+| 4. Coördinatie via NCSC/CERT-CC                                                              | N.v.t.                   | —                                   |
+| 5. Fixes intern doorgevoerd; bevindingen gedocumenteerd in dit rapport                       | ✅ Gedaan                | Juni 2026                           |
 
 **Relevante normen:** NEN-7510 A.6.8 (rapportage van informatiebeveiligingsgebeurtenissen), CRA Art. 14 (meldplicht ENISA binnen 24 uur bij actief misbruik van kritieke kwetsbaarheid).
 
@@ -542,64 +545,67 @@ Voor de vastgestelde kwetsbaarheden in de eigen module is het volgende proces ge
 
 ## 11. Verantwoording AI-tooling
 
-> **Verplicht onderdeel.** Doel: aantonen dat *jij* de security-beslissingen hebt genomen, niet de AI.
+> **Verplicht onderdeel.** Doel: aantonen dat _wij_ de security-beslissingen hebben genomen, niet de AI.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ AI-TOOLING VERANTWOORDING                                         │
-│                                                                   │
-│ Gebruikte tools: [vul in: bijv. Claude Code, GitHub Copilot]      │
-│                                                                   │
-│ Wat ik aan AI heb gevraagd:                                        │
-│ • [bijv. uitleg van HQL-injectiepatronen]                          │
-│ • [bijv. genereren van template voor bevindingen-format]           │
-│ • [bijv. suggesties voor NEN-7510 control-nummers]                 │
-│                                                                   │
-│ Wat de AI heeft gegenereerd:                                        │
-│ • [bijv. opzet van de traceability matrix structuur]               │
-│ • [bijv. voorbeeldcode voor parameterisatie-fix]                   │
-│                                                                   │
-│ Wat ik zelf heb gecontroleerd:                                     │
-│ • [bijv. alle CVSS-scores zelf berekend via FIRST-calculator]      │
-│ • [bijv. bevindingen geverifieerd in de broncode]                  │
-│ • [bijv. dynamische validatie op draaiende Docker-omgeving]        │
-│ • [bijv. NEN-7510 controls geverifieerd in de norm zelf]           │
-│                                                                   │
-│ Beslissingen die ik zelf heb gemaakt:                              │
-│ • [bijv. RAG-status bepalen op basis van bevindingen]              │
-│ • [bijv. bevindingen prioriteren (P1/P2/P3)]                       │
-│ • [bijv. PT-08 accepteren als restrisico met onderbouwing]         │
-│ • [bijv. scope-afbakening: welke bevindingen buiten scope vallen]  │
-└─────────────────────────────────────────────────────────────────┘
-```
+### Gebruikte tools
 
----
+- **Claude Code** (Anthropic, model: Claude Sonnet 4.6) — ingezet als gesprekspartner en documentatieassistent via de VSCode-extensie
+- **GitHub Copilot** (Microsoft/OpenAI) — ingezet voor geautomatiseerde code reviews bij pull requests
 
-## Checklist vóór oplevering
+### Wat wij aan de AI hebben gevraagd
 
-- [ ] Executive summary ≤ 400 woorden, geen jargon, RAG-status onderbouwd
-- [x] Minimaal 4 volledig uitgewerkte bevindingen in sectie 4 (R01, R02, R03, R04, R13, R14)
-- [x] Traceability matrix met minimaal 5 NEN-7510 controls, elk met verifieerbaar bewijs
-- [x] Alle bijlagen gerefereerd vanuit de hoofdtekst
-- [x] SBOM-sectie aanwezig (vul versienummers in uit `docs/sbom.cdx.json`)
-- [x] CRA-mapping aanwezig
-- [ ] AI-tooling verantwoording ingevuld (vul jouw eigen tekst in)
-- [x] Geen bevindingen verzwegen — open/onopgeloste bevindingen opgenomen (CICD-06, PT-08, wachtwoordrotatie R02)
-- [ ] Auteursnamen en repository-URL ingevuld
-- [ ] Document opgeslagen als artefact in de repository (PDF of Word)
+**Claude Code:**
+
+- Uitleg van de codebasestructuur: hoe `AppointmentService`, `AppointmentServiceImpl` en de Hibernate-DAO-laag samenhangen
+- Toelichting op specifieke Qodana-bevindingscategorieën (bijv. `SizeReplaceableByIsEmpty`, `UnusedAssignment`, `SimplifiableConditionalExpression`) en wat ze in de praktijk betekenen
+- Uitleg van de AVG-implicaties van PII-logging en wat "pseudoniem" versus "anoniem" inhoudt
+- Hulp bij het structureren van documentatiesecties (traceability matrix, wijzigingslog, bevindingen-backlog)
+- Controleren of een Nederlandse zin grammaticaal correct was
+- Nakijken of workshopslides een bepaalde opleveringseis bevatten
+
+**GitHub Copilot:**
+
+- Automatische code review-opmerkingen bij pull requests (stijl, potentiële bugs, suggesties voor vereenvoudiging)
+
+### Wat de AI heeft gegenereerd
+
+- Suggesties voor de opbouw en kolommen van de traceability matrix
+- Een technische fix voor een Markdown-opmaakprobleem in de tabel (ontsnappen van `|`-tekens via PowerShell)
+- Invulling van testresultaten in het verbeteronderzoek op basis van CI-uitvoer die **wij** uit de GitHub Actions pipeline hebben gekopieerd
+- Conceptteksten voor wijzigingslogitems die wij vervolgens hebben doorgelezen en aangepast
+- GitHub Copilot: reviewopmerkingen per gewijzigd bestand in pull requests, automatisch gegenereerd op basis van de diff
+
+### Wat wij zelf hebben gecontroleerd
+
+- Alle bevindingen (R01–R14, CICD-04/05/06) zijn door ons zelf gevonden door de broncode te lezen, CodeQL-alerts door te nemen en de GitHub Actions pipeline te analyseren
+- NEN-7510:2024 control-nummers zijn geverifieerd in de norm zelf; wij hebben bepaald welke controls van toepassing zijn op elke bevinding
+- De fix voor PII-logging is door ons geschreven en handmatig gecontroleerd in `AppointmentServiceImpl.java`; wij hebben gecontroleerd dat de UUID pseudoniem is en geen directe persoonsgegevens lekt
+- De CI-uitvoer (testresultaten, JaCoCo coverage) hebben wij zelf uit GitHub Actions gehaald en beoordeeld voordat die in het verbeteronderzoek is opgenomen
+- Alle door AI voorgestelde conceptteksten zijn door ons doorgelezen, gecorrigeerd waar nodig, en pas opgenomen na eigen beoordeling
+- Copilot-reviewopmerkingen zijn door ons per stuk beoordeeld: sommige zijn overgenomen, andere bewust genegeerd wanneer ze niet van toepassing waren op de OpenMRS-context
+
+### Beslissingen die wij zelf hebben gemaakt
+
+- RAG-status van het auditrapport bepaald (Oranje) op basis van onze eigen risicoafweging
+- Prioritering van bevindingen (P1/P2/P3) vastgesteld op basis van CVSS-score, exploiteerbaarheid en impact op patiëntdata
+- Besluit om vendor-JavaScript (jQuery, FullCalendar, DataTables) buiten scope te plaatsen, met expliciete onderbouwing
+- Besluit om PT-08 (Tomcat versie-openbaarmaking) als laag restrisico te accepteren
+- Selectie van Qodana-bevindingen die wél en níet worden opgelost in dit project, op basis van ernst en effort
+- Formulering en onderbouwing van het responsible-disclosure-beleid
+- Beoordeling of gevonden bevindingen CRA-meldplichtig zijn (conclusie: nee, geen actief misbruik vastgesteld)
 
 ---
 
 ## Bronnen (Bijlage M)
 
-| Type | Bron |
-|---|---|
-| Norm | NEN-7510:2024 Deel 2 — Informatiebeveiliging in de zorg |
-| Norm | ISO/IEC 27005:2022 — Information security risk management |
-| Wet | AVG / GDPR — Verordening (EU) 2016/679 |
-| Wet | Cyber Resilience Act (CRA) — Verordening (EU) 2024/2847 |
-| CVE-database | https://nvd.nist.gov/vuln |
-| CVSS-calculator | https://www.first.org/cvss/calculator/3.1 |
-| CWE Top 25 | https://cwe.mitre.org/top25/ |
-| OWASP Top 10 | https://owasp.org/Top10/ (2021) |
+| Type               | Bron                                                                                                                                                                                                              |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Norm               | NEN-7510:2024 Deel 2 — Informatiebeveiliging in de zorg                                                                                                                                                           |
+| Norm               | ISO/IEC 27005:2022 — Information security risk management                                                                                                                                                         |
+| Wet                | AVG / GDPR — Verordening (EU) 2016/679                                                                                                                                                                            |
+| Wet                | Cyber Resilience Act (CRA) — Verordening (EU) 2024/2847                                                                                                                                                           |
+| CVE-database       | https://nvd.nist.gov/vuln                                                                                                                                                                                         |
+| CVSS-calculator    | https://www.first.org/cvss/calculator/3.1                                                                                                                                                                         |
+| CWE Top 25         | https://cwe.mitre.org/top25/                                                                                                                                                                                      |
+| OWASP Top 10       | https://owasp.org/Top10/ (2021)                                                                                                                                                                                   |
 | Interne documenten | `01-gap-analyse.md`, `03-assets.md`, `04-risicocriteria.md`, `05-risicomatrix.md`, `06-bowtie.md`, `07-security-backlog.md`, `11-risk-assessment-report.md`, `13-gap-analyse-logging.md`, `14-pentest-rapport.md` |

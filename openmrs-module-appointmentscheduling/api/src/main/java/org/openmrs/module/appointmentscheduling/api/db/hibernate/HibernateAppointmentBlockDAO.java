@@ -76,7 +76,7 @@ public class HibernateAppointmentBlockDAO extends HibernateSingleClassDAO implem
 		if (provider != null) {
 			criteria.add(Restrictions.eq("provider.id", provider.getProviderId()));
 		}
-		if (appointmentTypes != null && appointmentTypes.size() > 0) {
+		if (appointmentTypes != null && !appointmentTypes.isEmpty()) {
 			Set<Integer> types = new HashSet<Integer>();
 			for (AppointmentType type : appointmentTypes) {
 				types.add(type.getAppointmentTypeId());

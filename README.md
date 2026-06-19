@@ -116,25 +116,39 @@ Push naar je feature-branch en open een PR naar `develop`. De CI-pipeline (build
 
 ### 5. CI/CD pipeline
 
-De pipeline (`pipeline.yml`) voert bij elke push de volgende stappen uit:
+De pipeline bestaat uit drie workflowbestanden:
+
+**`pipeline.yml`** — hoofd-pipeline, draait bij elke push/PR:
 
 1. **Gitleaks** — scant op hardcoded secrets (blokkeert bij fund)
-2. **Build & Test** — Maven `clean verify`
-3. **SonarQube** — statische code-analyse (op `develop`: waarschuwing; op `release/*`/`main`: hard gate)
-4. **OWASP Dependency Check** — SCA scan op CVEs in dependencies (blokkeert bij CVSS ≥ 7 op `release/*`/`main`)
+2. **Build & Test** — Maven `clean verify` inclusief JaCoCo coverage gate (≥ 70%)
+3. **SonarQube** — statische code-analyse (op `main` en PRs; quality gate blokkeert bij FAILED)
+4. **Snyk** — SCA scan op CVEs in dependencies (blokkeert bij CVSS ≥ 7)
 5. **Docker build + Trivy** — bouwt de image en scant op CRITICAL/HIGH CVEs
 6. **Deploy** — alleen bij push op `develop`, `release/*` of handmatig op `main`
+
+**`codeql.yml`** — SAST analyse, draait bij elke push/PR naar `main`, `develop`, `release/*`:
+
+- CodeQL Java-analyse met `security-extended` queries
+- Resultaten zichtbaar in GitHub Security tab
+
+**`qodana_code_quality.yml`** — JetBrains codekwaliteit, draait bij PRs en push naar `main`:
+
+- Qodana kwaliteitsgate via `qodana.cloud`
 
 Benodigde GitHub Secrets voor de volledige pipeline:
 
 | Secret | Voor |
 |---|---|
-| `SONAR_HOST_URL` + `SONAR_TOKEN` | SonarQube analyse |
-| `NVD_API_KEY` | OWASP Dependency Check |
+| `SONAR_TOKEN` | SonarQube analyse |
+| `SNYK_TOKEN` | Snyk dependency scan |
+| `QODANA_TOKEN_281741559` | Qodana kwaliteitsanalyse |
 | `TEST_SSH_KEY` + `TEST_SERVER_HOST` + `TEST_SERVER_USER` + `TEST_SSH_KNOWN_HOST` | Deploy naar test |
 | `ACC_SSH_KEY` + `ACC_SERVER_HOST` + `ACC_SERVER_USER` + `ACC_SSH_KNOWN_HOST` | Deploy naar acceptatie |
 | `PROD_SSH_KEY` + `PROD_SERVER_HOST` + `PROD_SERVER_USER` + `PROD_SSH_KNOWN_HOST` | Deploy naar productie |
 | `SLACK_WEBHOOK` | Deployment notificaties |
+
+GitHub repository variabelen (`vars.*`): `SONAR_PROJECT_KEY`, `SONAR_ORGANIZATION`, `SONAR_HOST_URL`, `DEPLOYMENTS_ENABLED`.
 
 Zie `OTAP-SETUP.md` voor de volledige serveropzet en configuratie van GitHub Environments.
 
@@ -142,10 +156,9 @@ Zie `OTAP-SETUP.md` voor de volledige serveropzet en configuratie van GitHub Env
 
 ## Bekende issues
 
-| Bestand | Issue |
-|---|---|
-| `AppointmentServiceImpl.java:1426` | **PII-logging** — logt patiëntnaam, DOB, identifier en geslacht in plaintext (AVG-overtreding) |
-| `AppointmentActivator.java:79` | **Hardcoded credentials** — JDBC-wachtwoord staat in broncode |
-| `AppointmentUtils.java:29` | **Typfout** — `"View Provider Scedules"` moet `"View Provider Schedules"` zijn |
+| Bestand | Issue | Status |
+|---|---|---|
+| `AppointmentServiceImpl.java:1426` | **PII-logging** — logt patiëntnaam, DOB, identifier en geslacht in plaintext (AVG-overtreding) | Open |
+| `AppointmentUtils.java:29` | **Typfout** — `"View Provider Scedules"` moet `"View Provider Schedules"` zijn | Open |
 
 Zie `docs/auditrapport/05-risicomatrix.md` voor het volledige risicooverzicht.

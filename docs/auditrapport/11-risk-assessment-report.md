@@ -3,7 +3,7 @@
 **Sprint:** 2  
 **Taak:** SOF-38: Risk Assessment Report opstellen  
 **Module:** OpenMRS Appointment Scheduler  
-**Versie:** 2  
+**Versie:** 3
 **Norm:** NEN-7510:2024-2, AVG (GDPR), CRA
 
 ---
@@ -207,13 +207,13 @@ if (!isProviderForPatient(currentUser, requestedPatient)) {
 ### 4.2 Hoge bevindingen (🟠 Oranje, score 8–14)
 
 | ID      | Bevinding                          | Score | CWE     | NEN-7510 | Mitigatie (samenvatting)                                                       |
-| ------- | ---------------------------------- | ----- | ------- | -------- | ------------------------------------------------------------------------------ |
+| ------- | ---------------------------------- | ----- | ------- | -------- | ------------------------------------------------------------------------------ | --- |
 | R05     | Lege `@Authorized()` annotaties    | 12    | CWE-284 | A.8.3    | Voeg expliciete privilege-constanten toe aan alle servicemethoden              |
 | R07     | Geen auditlogging afspraakmutaties | 12    | CWE-778 | A.8.15   | Log `saveAppointment`, `voidAppointment`, `cancelAppointment` met UUID + actie |
 | R08     | Geen brute-force beveiliging       | 12    | CWE-307 | A.8.5    | Account lockout na N pogingen; rate limiting op reverse proxy                  |
 | R09     | ConcurrentModificationException    | 9     | CWE-362 | A.8.6    | Gebruik `iterator.remove()` in `cleanOpenAppointments`                         |
 | R11     | Void/retire-vlaggen niet gezet     | 12    | CWE-665 | A.8.6    | Stel `setVoided(true)` / `setRetired(true)` in vóór `save`-aanroep             |
-| CICD-05 | Geen SCA/CVE-scan                  | 16    | —       | A.8.8    | OWASP Dependency Check + Trivy toevoegen aan pipeline                          |
+| CICD-05 | Geen SCA/CVE-scan                  | 16    | —       | A.8.8    | Snyk Open Source toevoegen aan pipeline via Maven                              |     |
 | CICD-06 | Niet-gepinde GitHub Actions        | 10    | CWE-829 | A.8.9    | Pin alle Actions op SHA-hash                                                   |
 
 ---
@@ -248,19 +248,78 @@ Alle bestaande tests slagen. Dit bevestigt dat de huidige codebase functioneel c
 
 > **Conclusie:** De testdekking is functioneel adequaat maar security-blind. Aanvullende security-gerichte tests zijn vereist (zie security backlog `09-security-backlog.md`).
 
-### 5.2 SAST (SonarQube)
+### 5.2 SBOM (Software Bill of Materials)
 
-SonarQube is geconfigureerd in de pipeline maar draait met `continue-on-error: true` (CICD-03). De quality gate blokkeert de pipeline niet. Resultaten zijn beschikbaar in SonarQube dashboard maar worden niet afgedwongen.
+Gegenereerd op: 19 juni 2026 | Tool: CycloneDX Maven Plugin v2.8.0 | Formaat: CycloneDX 1.5 (JSON + XML)
 
-> **Placeholder:** Voeg hier de SonarQube quality gate status en belangrijkste bevindingen in zodra CICD-03 is opgelost.
+#### Scope
 
-### 5.3 SCA / Dependency-scan
+De SBOM dekt de volledige Maven-dependency-tree van de module, gegenereerd via `makeAggregateBom` over de scopes `compile`, `provided`, `runtime` en `system`. Bestanden beschikbaar als `docs/sbom/bom.json` en `docs/sbom/bom.xml`.
 
-OWASP Dependency Check en Trivy zijn nog niet actief in de pipeline (CICD-05 — gepland).
+#### Componentoverzicht
 
-> **Placeholder:** Voeg hier de OWASP/Trivy scanresultaten in zodra CICD-05 is geïmplementeerd. Verwijzing naar SBOM: `docs/sbom.cdx.json`.
+| Gegeven                 | Waarde                                  |
+| ----------------------- | --------------------------------------- |
+| Rootcomponent           | `appointmentscheduling:1.17.0-SNAPSHOT` |
+| Totaal componenten      | 110 libraries                           |
+| Met PURL                | 110/110 (100%)                          |
+| Met hashverificatie     | 108/110 (98%)                           |
+| Met licentie-informatie | 66/110 (60%)                            |
+| Lifecycle-fase          | `build`                                 |
 
----
+#### Verdeling naar componentgroep
+
+| Groep                 | Aantal |
+| --------------------- | ------ |
+| Overig (diverse libs) | 49     |
+| Apache / Commons      | 21     |
+| `org.openmrs`         | 18     |
+| `org.springframework` | 13     |
+| Hibernate             | 4      |
+| Jackson               | 2      |
+| Log4j                 | 2      |
+| MySQL Connector       | 1      |
+
+#### Licentieverdeling (top 5)
+
+| Licentie         | Componenten |
+| ---------------- | ----------- |
+| Apache-2.0       | 35          |
+| LGPL (varianten) | 7           |
+| MIT              | 3           |
+| Public Domain    | 3           |
+| BSD-3-Clause     | 2           |
+
+> **Aandachtspunt licenties:** 44 van de 110 componenten hebben geen licentie-metadata in de SBOM. Dit is een bekende beperking van de CycloneDX Maven Plugin wanneer licentie-informatie ontbreekt in de upstream POM. Vervolgactie: handmatige verificatie of uitbreiding met een licentie-enrichment tool (bijv. License Finder).
+
+> **Aandachtspunt hashes:** 2 componenten missen hashverificatie. Dit beperkt de integriteitscontrole voor die artefacten. Actie: controleer of deze componenten beschikbaar zijn via Maven Central met verificeerbare checksums.
+
+> **Relatie met SCA:** De SBOM vormt de inputbasis voor de Snyk SCA-scan (zie §5.3). De 110 geïnventariseerde componenten komen overeen met de 103 + 59 gescande dependencies in `api/pom.xml` resp. `omod/pom.xml` (overlap door gedeelde transitive dependencies).
+
+### 5.3 SCA / Dependency-scan (Snyk via Maven)
+
+Uitgevoerd op: 19 juni 2026 | Tool: Snyk Open Source v1.1305.1 | Branch: `develop`
+
+#### Scanresultaten per submodule
+
+| Submodule                      | Doelbestand    | Geanalyseerde dependencies | Directe kwetsbaarheden | Genegeerde kwetsbaarheden |
+| ------------------------------ | -------------- | -------------------------- | ---------------------- | ------------------------- |
+| `appointmentscheduling` (root) | `pom.xml`      | 0                          | 0                      | 0                         |
+| `appointmentscheduling-api`    | `api/pom.xml`  | 103                        | 0                      | 60                        |
+| `appointmentscheduling-omod`   | `omod/pom.xml` | 59                         | 0                      | 26                        |
+
+**Geen kwetsbaarheden in de module zelf aangetroffen.** Alle 86 gevonden kwetsbare dependency-paden zijn via de `.snyk` policy genegeerd, omdat het uitsluitend transitieve afhankelijkheden betreft die binnenkomen via `openmrs-api:1.9.9` (provided scope). De OpenMRS Core-versie valt buiten de projectscope en kan binnen dit project niet worden aangepast.
+
+#### Genegeerde kwetsbaarheden — ernst-overzicht
+
+| Ernst   | Unieke CVE's | Voornaamste getroffen libraries                                                                                     |
+| ------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Kritiek | 4            | `log4j:1.2.15`, `spring-beans:3.0.5`, `xstream:1.4.3`, `jackson-mapper-asl:1.5.0`                                   |
+| Hoog    | 56           | `xstream:1.4.3` (19 paden), `spring-web:3.0.5` (5 paden), `log4j:1.2.15` (4 paden), `spring-webmvc:3.0.5` (4 paden) |
+
+Alle negaties zijn gedocumenteerd in `.snyk` met reden "Transitive via openmrs-api:1.9.9 (provided). Platform locked — outside project scope." en verlopen op 18 juni 2027.
+
+> **Opmerking restrisico:** De kritieke kwetsbaarheden in `log4j 1.2.15`, `Spring 3.0.5` en `XStream 1.4.3` zijn reëel, maar niet oplosbaar zonder een upgrade van OpenMRS Core. Dit risico is bewust geaccepteerd en gedocumenteerd als platform-restrisico (zie sectie 8). De Snyk-scan is geconfigureerd als permanente pipeline-stap (CICD-05).
 
 ## 6. Kosteninschatting
 
@@ -281,7 +340,7 @@ De onderstaande raming is gebaseerd op een gemiddeld junior/medior developerstar
 | R11        | Void/retire-vlaggen fixen (4 methoden)      | 2          | 4          | € 110       | € 340       | P2         |
 | CICD-03    | `continue-on-error` verwijderen             | 1          | 2          | € 55        | € 170       | P1         |
 | CICD-04    | Gitleaks toevoegen aan pipeline             | 2          | 4          | € 110       | € 340       | P1         |
-| CICD-05    | OWASP + Trivy toevoegen                     | 4          | 8          | € 220       | € 680       | P2         |
+| CICD-05    | Snyk toevoegen aan pipeline                 | 4          | 8          | € 220       | € 680       | P2         |
 | CICD-06    | Actions pinnen op SHA                       | 2          | 4          | € 110       | € 340       | P3         |
 | R10        | Deprecated Date-API migreren                | 4          | 8          | € 220       | € 680       | P3         |
 | R12        | Ongebruikte variabele verwijderen           | 0.5        | 1          | € 28        | € 85        | P3         |
@@ -324,7 +383,7 @@ De onderstaande raming is gebaseerd op een gemiddeld junior/medior developerstar
 5. **R03** — Implementeer data-level ACL
 6. **R04** — Herstel privilege-constanten + test
 7. **R05, R07, R11** — Autorisatie en auditlogging compleet maken
-8. **CICD-05** — OWASP + Trivy toevoegen
+8. **CICD-05** — Snyk toevoegen als vaste pipeline-stap
 
 ### Binnen twee sprints
 
@@ -339,28 +398,26 @@ De onderstaande raming is gebaseerd op een gemiddeld junior/medior developerstar
 
 Na volledige uitvoering van alle bovenstaande maatregelen resteert een restrisico op:
 
-| Categorie                    | Restrisico                                                         | Eigenaar                     |
-| ---------------------------- | ------------------------------------------------------------------ | ---------------------------- |
-| OpenMRS platform EOL (1.9.9) | Platform-CVE's buiten module-scope                                 | Opdrachtgever/zorginstelling |
-| Java 7/8 runtime EOL         | Geen security-updates meer beschikbaar                             | Opdrachtgever                |
-| Geen MFA (R06)               | Authenticatie via OpenMRS core, niet configureerbaar vanuit module | Systeembeheerder             |
-| Geen TLS op test/acceptatie  | Infrastructuurverantwoordelijkheid                                 | DevOps/systeembeheerder      |
-| GitHub organisatiebeheer     | Environment protection, verplichte reviewers                       | Projectbeheerder             |
+| Categorie                    | Restrisico                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Eigenaar                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| OpenMRS platform EOL (1.9.9) | 86 kwetsbare dependency-paden (4 kritiek, 56 hoog) aangetroffen via Snyk SCA, volledig transitief via `openmrs-api:1.9.9` (provided). Kritieke gevallen: `log4j:1.2.15` (CVE-2019-17571, CVE-2022-23302/05/07), `spring-beans:3.0.5` (CVE-2022-22965 — Spring4Shell), `xstream:1.4.3` (19 CVE's waaronder RCE), `jackson-mapper-asl:1.5.0` (CVE-2019-10202). Niet oplosbaar zonder OpenMRS Core-upgrade. Gedocumenteerd in `.snyk` policy, negaties verlopen 18 juni 2027. | Opdrachtgever/zorginstelling |
+| Java 7/8 runtime EOL         | Geen security-updates meer beschikbaar                                                                                                                                                                                                                                                                                                                                                                                                                                     | Opdrachtgever                |
+| Geen MFA (R06)               | Authenticatie via OpenMRS core, niet configureerbaar vanuit module                                                                                                                                                                                                                                                                                                                                                                                                         | Systeembeheerder             |
+| Geen TLS op test/acceptatie  | Infrastructuurverantwoordelijkheid                                                                                                                                                                                                                                                                                                                                                                                                                                         | DevOps/systeembeheerder      |
+| GitHub organisatiebeheer     | Environment protection, verplichte reviewers                                                                                                                                                                                                                                                                                                                                                                                                                               | Projectbeheerder             |
 
 > Conform NEN-7510 A.5.1 is dit restrisico bewust geaccepteerd en gedocumenteerd.
-
----
 
 ## 9. Referenties
 
 | Document            | Locatie                                                         |
-| ------------------- | --------------------------------------------------------------- | -------------------- |
+| ------------------- | --------------------------------------------------------------- |
 | Asset-identificatie | `docs/auditrapport/03-assets.md`                                |
 | Risicocriteria      | `docs/auditrapport/04-risicocriteria.md`                        |
 | Risicomatrix        | `docs/auditrapport/05-risicomatrix.md`                          |
 | Bow-tie analyse     | `docs/auditrapport/06-bowtie.md`                                |
 | Security backlog    | `docs/auditrapport/07-security-backlog.md`                      |
-| // ????             | SBOM                                                            | `docs/sbom.cdx.json` |
+| SBOM                | `docs/sbom/bom.json`, `docs/sbom/bom.xml`                       |
 | Testrapporten       | `api/target/surefire-reports/`, `omod/target/surefire-reports/` |
 | NEN-7510:2024-2     | Nederlandse norm voor informatiebeveiliging in de zorg          |
 | AVG / GDPR          | Verordening (EU) 2016/679                                       |

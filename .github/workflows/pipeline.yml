@@ -199,52 +199,14 @@ jobs:
             openmrs-module-appointmentscheduling/snyk.sarif
             openmrs-module-appointmentscheduling/snyk-sca.json
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # SAST: CodeQL — hard gate, blokkeert bij bevindingen
-  # Mitigeert: CICD-03 | NEN-7510: 8.29
-  # Runs parallel to build-and-test. Compiles independently (CodeQL instruments
-  # the compiler to track data flow — it cannot reuse build-and-test output).
-  # ─────────────────────────────────────────────────────────────────────────────
-  codeql:
-    name: CodeQL SAST
-    needs: secret-scan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          java-version: "8"
-          distribution: "temurin"
-          cache: maven
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
-          queries: security-extended
-
-      - name: Build for CodeQL
-        working-directory: ./openmrs-module-appointmentscheduling
-        run: mvn clean package -U --no-transfer-progress -DskipTests
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: codeql-java
+  # CodeQL wordt beheerd via GitHub Default Setup (Settings → Code security →
+  # Code scanning). Draait automatisch op elke PR naar main en wekelijks.
+  # Voeg "Code scanning results / CodeQL (java)" toe als required status check
+  # in branch protection op main om merges te blokkeren bij bevindingen.
 
   docker-build:
     name: Build & Push Docker Image
-    needs: [build-and-test, codeql]
+    needs: build-and-test
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.DEPLOYMENTS_ENABLED == 'true'
     permissions:

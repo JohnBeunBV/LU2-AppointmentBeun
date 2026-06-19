@@ -149,7 +149,7 @@ public class StudentT {
 		} else {
 			fg = Math.PI / (gamma(1.0D - x) * Math.sin(Math.PI * x));
 			
-			if (fg != 1.0 / 0.0 && fg != -1.0 / 0.0) {
+			if (!Double.isInfinite(fg)) {
 				if (fg < 0) {
 					throw new IllegalArgumentException("\nThe gamma function is negative");
 				} else {

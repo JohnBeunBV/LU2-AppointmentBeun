@@ -33,24 +33,22 @@
 
 ### S1 — Hardcoded credentials (kritiek) — OPGELOST
 
-**Bestand:** `AppointmentActivator.java` regels 79–82 *(verwijderd)*
+**Bestand:** `AppointmentActivator.java` regels 79–82
 
-De volledige `getHL7ExportUrl()`-methode inclusief hardcoded wachtwoord en JDBC-verbindingsstring is verwijderd uit de broncode. De methode werd nergens aangeroepen (dode code) en vormt een beveiligingsrisico. **Conform S1 na fix.**
+```java
+private static final String HL7_EXPORT_PASSWORD = "Appt@Export2021!";
+private static final String HL7_DB_URL = "jdbc:mysql://hl7-reports.hospital.internal:3306/appointments?user=appt_export_svc&password=Appt@Export2021!";
+```
+
+Productiewachtwoord en JDBC-verbindingsstring staan hardcoded in de broncode en zijn daarmee zichtbaar in de git-geschiedenis. **Niet conform S1.**
 
 ---
 
-### S2 — PII-logging (kritiek)
+### S2 — PII-logging (kritiek) — ✅ OPGELOST
 
-**Bestand:** `AppointmentServiceImpl.java` regels 1426–1432
+**Bestand:** `AppointmentServiceImpl.java`
 
-```java
-log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonName()
-        + " dob=" + patient.getBirthdate()
-        + " identifier=" + patient.getPatientIdentifier().getIdentifier()
-        + " gender=" + patient.getGender());
-```
-
-Naam, geboortedatum, patiënt-ID en geslacht worden als platte tekst naar de applicatielog geschreven. Dit is een AVG-overtreding. **Niet conform S2.**
+PII (naam, geboortedatum, patiënt-ID, geslacht) verwijderd uit het logstatement. Alleen de pseudonieme `patientUuid` en `userUuid` worden nu gelogd. Zie [`04-wijzigingslog.md`](04-wijzigingslog.md) — fix/s2-remove-pii-logging. **Conform S2.**
 
 ---
 
@@ -125,8 +123,8 @@ Variabele wordt aangemaakt maar nooit gebruikt. **Niet conform M5.**
 
 | Eis                              | Status        |
 | -------------------------------- | ------------- |
-| S1 — Geen hardcoded credentials  | **Opgelost**  |
-| S2 — Geen PII in logs            | Niet conform  |
+| S1 — Geen hardcoded credentials  | Opgelost ✅   |
+| S2 — Geen PII in logs            | Opgelost ✅   |
 | S3 — Toegangscontrole            | Deels conform |
 | M1 — Geen deprecated API         | Niet conform  |
 | M2 — Methoden correct            | Niet conform  |

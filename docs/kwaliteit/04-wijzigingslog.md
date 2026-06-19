@@ -1,4 +1,4 @@
-# 04 — Wijzigingslog
+# 04 - Wijzigingslog - OpenMRS Appointment Scheduler
 
 Per branch wordt hieronder gedocumenteerd wat er is gewijzigd, waarom, en welk ontwerppatroon is toegepast.
 
@@ -40,8 +40,8 @@ De UUID is pseudoniem: zonder de koppeltabel in de database is een UUID niet her
 
 ### Gewijzigde bestanden
 
-| Bestand | Wijziging |
-|---------|-----------|
+| Bestand                                    | Wijziging                                                                   |
+| ------------------------------------------ | --------------------------------------------------------------------------- |
 | `api/.../impl/AppointmentServiceImpl.java` | PII verwijderd uit log statement; alleen `patientUuid` en `userUuid` gelogd |
 
 ### Regressiecontrole
@@ -178,14 +178,14 @@ return !inconsultationAppointments.isEmpty();
 
 **Gewijzigde bestanden:**
 
-| Bestand | Gevallen |
-|---------|---------|
-| `HibernateAppointmentDAO.java` | 3 (regels 88, 112, 135) |
-| `HibernateAppointmentBlockDAO.java` | 1 (regel 79) |
-| `AppointmentServiceImpl.java` | 1 (regel 1320) |
-| `DWRAppointmentService.java` | 2 (regels 194, 236, 258) |
-| `AppointmentBlockFormController.java` | 2 (regels 253, 265) |
-| `AppointmentBlockValidator.java` | 1 (regel 68) |
+| Bestand                               | Gevallen                 |
+| ------------------------------------- | ------------------------ |
+| `HibernateAppointmentDAO.java`        | 3 (regels 88, 112, 135)  |
+| `HibernateAppointmentBlockDAO.java`   | 1 (regel 79)             |
+| `AppointmentServiceImpl.java`         | 1 (regel 1320)           |
+| `DWRAppointmentService.java`          | 2 (regels 194, 236, 258) |
+| `AppointmentBlockFormController.java` | 2 (regels 253, 265)      |
+| `AppointmentBlockValidator.java`      | 1 (regel 68)             |
 
 **Ontwerppatroon:** Idiomatic API Usage — gebruik de meest expressieve en semantisch correcte methode.
 
@@ -253,15 +253,15 @@ return description.length() > 1024;
 
 ### Gewijzigde bestanden (totaaloverzicht)
 
-| Bestand | Fixes |
-|---------|-------|
-| `api/.../impl/AppointmentServiceImpl.java` | Division by zero (×2), Deprecated Date-API (×7), Unused assignment (×1), isEmpty (×1) |
-| `api/.../db/hibernate/HibernateAppointmentDAO.java` | isEmpty (×3) |
-| `api/.../db/hibernate/HibernateAppointmentBlockDAO.java` | isEmpty (×1) |
-| `api/.../validator/AppointmentBlockValidator.java` | isEmpty (×1) |
-| `api/.../validator/AppointmentTypeValidator.java` | Redundant ternary (×2) |
-| `omod/.../web/DWRAppointmentService.java` | StringBuilder (×1), isEmpty (×2) |
-| `omod/.../web/controller/AppointmentBlockFormController.java` | isEmpty (×2) |
+| Bestand                                                       | Fixes                                                                                 |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `api/.../impl/AppointmentServiceImpl.java`                    | Division by zero (×2), Deprecated Date-API (×7), Unused assignment (×1), isEmpty (×1) |
+| `api/.../db/hibernate/HibernateAppointmentDAO.java`           | isEmpty (×3)                                                                          |
+| `api/.../db/hibernate/HibernateAppointmentBlockDAO.java`      | isEmpty (×1)                                                                          |
+| `api/.../validator/AppointmentBlockValidator.java`            | isEmpty (×1)                                                                          |
+| `api/.../validator/AppointmentTypeValidator.java`             | Redundant ternary (×2)                                                                |
+| `omod/.../web/DWRAppointmentService.java`                     | StringBuilder (×1), isEmpty (×2)                                                      |
+| `omod/.../web/controller/AppointmentBlockFormController.java` | isEmpty (×2)                                                                          |
 
 ### Regressiecontrole
 

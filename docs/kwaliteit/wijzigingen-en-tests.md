@@ -51,7 +51,7 @@ qodana (JetBrains kwaliteitsanalyse)
 **Toegevoegde beveiligingsmaatregelen in de pipeline:**
 
 - **Gitleaks** secret scan als eerste job — blokkeert bij gevonden secrets
-- **SonarQube** SAST analyse (waarschuwing op develop, hard gate op release/main)
+- **SonarQube** SAST analyse (alle branches `continue-on-error: true` — SonarCloud free plan beperking; harde pipeline-gates via Gitleaks en Snyk)
 - **Snyk** dependency vulnerability scan (CVSS ≥ 7)
 - **Trivy** container image scan (CRITICAL/HIGH CVE's)
 - SSH-sleutels via `webfactory/ssh-agent` (sleutel nooit naar schijf geschreven)

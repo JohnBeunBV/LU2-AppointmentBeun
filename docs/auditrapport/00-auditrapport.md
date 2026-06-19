@@ -4,7 +4,7 @@
 **Versie:** 1.17.0-SNAPSHOT  
 **Repository:** https://github.com/JohnBeunBV/LU2-AppointmentBeun  
 **Beoordelingsperiode:** juni 2026  
-**Auteur(s):** [Storm Kroonen, Nick de Rooij en Thijs van der Veen]  
+**Auteur(s):** [Storm Kroonen, Nick de Rooij en Thijs van de Veen]  
 **Datum:** 19 juni 2026  
 **Norm:** NEN-7510:2024 Deel 2 (primair) · CRA (aanvullend) · AVG (privacy/logging)
 

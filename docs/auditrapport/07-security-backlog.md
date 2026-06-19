@@ -397,11 +397,11 @@ Pipeline opgesplitst: `develop` gebruikt `continue-on-error: true`; `release/*` 
 
 ---
 
-### CICD-05 — SCA / CVE-scan toegevoegd (OWASP + Trivy)
+### CICD-05 — SCA / CVE-scan toegevoegd (Snyk + Trivy)
 
 **Status: ✅ Opgelost in sprint 2**
 
-OWASP Dependency Check op Maven-dependencies (blokkeert bij CVSS ≥ 7); Trivy container image scan (blokkeert bij CRITICAL/HIGH op `release/*` en `main`).
+Snyk op Maven-dependencies (blokkeert bij CVSS ≥ 7, policy via `.snyk`); Trivy container image scan (blokkeert bij CRITICAL/HIGH).
 
 ---
 

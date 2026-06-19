@@ -2,7 +2,7 @@
 
 **Module:** OpenMRS Appointment Scheduler  
 **Versie:** 1.17.0-SNAPSHOT  
-**Repository:** [vul repository-URL in]  
+**Repository:** https://github.com/JohnBeunBV/LU2-AppointmentBeun  
 **Beoordelingsperiode:** april 2026 – juni 2026  
 **Auteur(s):** [vul namen in]  
 **Datum:** 18 juni 2026  
@@ -39,7 +39,7 @@ Bij aanvang van de audit verkeerde de module in kritieke staat: vier bevindingen
 ### 2.1 Wat is beoordeeld
 
 - **Module/applicatie:** OpenMRS Appointment Scheduler, versie 1.17.0-SNAPSHOT
-- **Repository:** [vul repository-URL in] — map `openmrs-module-appointmentscheduling/`
+- **Repository:** https://github.com/JohnBeunBV/LU2-AppointmentBeun — map `openmrs-module-appointmentscheduling/`
 - **Beoordelingsperiode:** april 2026 – juni 2026 (sprints 1 t/m 3)
 - **Testomgeving:** Development (Docker dev-omgeving, `localhost:8080`), met OpenMRS 1.9.9 en Tomcat 8.0.53
 
@@ -82,8 +82,9 @@ De volgende categorieën zijn bewust buiten scope geplaatst, conform `07-securit
 | Techniek | Tool | Wanneer | Resultaat (verwijzing) |
 |---|---|---|---|
 | Gap-analyse | Handmatig / NEN-7510 controls checklist | Sprint 1 (SOF-22) | Bijlage A — `01-gap-analyse.md` + `13-gap-analyse-logging.md` |
-| SAST | SonarQube (pipeline) + handmatige code review | Bij elke PR + eindmeting sprint 3 | Bijlage D — SonarQube export |
-| SCA / CVE-scan | OWASP Dependency Check + Trivy (container) | Wekelijks + eindmeting | Bijlage G — OWASP/Trivy rapport |
+| SAST | CodeQL (`security-extended`, pipeline) + SonarQube (quality gate) + handmatige code review | Bij elke PR + eindmeting sprint 3 | Bijlage D — CodeQL/SonarQube export |
+| Codekwaliteit | Qodana (JetBrains, pipeline) | Bij elke PR | Qodana quality gate resultaat |
+| SCA / CVE-scan | Snyk (dependencies, CVSS ≥ 7) + Trivy (container image) | Bij elke build + eindmeting | Bijlage G — Snyk + Trivy rapport |
 | Secret scanning | Gitleaks (pipeline, sprint 2) | Bij elke commit | Pipeline-log |
 | SBOM-generatie | CycloneDX Maven Plugin | Build-tijd | `docs/sbom.cdx.json` — Bijlage C |
 | Risicoanalyse | ISO 27005 methode (kans × impact 1–5) | Sprint 2 (SOF-35/SOF-27) | Bijlage E — `05-risicomatrix.md` |
@@ -186,18 +187,15 @@ log.info("[AUDIT] appointment.read | user={} | patientUuid={} | result=SUCCESS",
 ```
 
 **Uitgevoerde fix:**
+
+De volledige `getHL7ExportUrl()`-methode is verwijderd uit `AppointmentActivator.java`. De methode was dode code (nergens aangeroepen) en bevatte een hardcoded JDBC-verbindingsstring met wachtwoord. Verwijdering was de veiligste oplossing.
+
 ```java
-// Vóór (❌):
+// Vóór (❌): dode methode met hardcoded credentials
 private static final String HL7_EXPORT_PASSWORD = "Appt@Export2021!";
 private static final String HL7_DB_URL = "jdbc:mysql://hl7-reports.hospital.internal:3306/...";
 
-// Na (✅):
-private String getHL7ExportUrl() {
-    String host = Context.getRuntimeProperties().getProperty("hl7.export.host", "hl7-reports.hospital.internal");
-    String user = Context.getRuntimeProperties().getProperty("hl7.export.user", "appt_export_svc");
-    String password = Context.getRuntimeProperties().getProperty("hl7.export.password", "");
-    return "jdbc:mysql://" + host + ":3306/appointments?user=" + user + "&password=" + password;
-}
+// Na (✅): methode volledig verwijderd — geen vervanging nodig (dode code)
 ```
 
 ---
@@ -474,16 +472,16 @@ De module is **niet productierijp** zolang:
 
 | Bijlage | Inhoud | Bronbestand |
 |---|---|---|
-| A | Gap-analyse (sprint 1 + re-evaluatie sprint 3) | `01-gap-analyse.md`, `13-gap-analyse-logging.md` |
-| B | Traceability matrix | Zie sectie 9 hieronder |
-| C | SBOM (CycloneDX JSON) | `docs/sbom.cdx.json` |
-| D | SAST-output (SonarQube) | [SonarQube quality gate export — bij elke PR in pipeline] |
-| E | Risicomatrix | `05-risicomatrix.md` |
-| F | Bow-tie diagrammen / threat models | `06-bowtie.md`, `10-cicd-bowtie.md`, `12-attack-surface.md` |
-| G | OWASP Dependency Check + Trivy rapport | [pipeline-artifact — sprint 2/3] |
+| A | Gap-analyse — sprint 1 (april 2026) + re-evaluatie sprint 3 (18 juni 2026) | `01-gap-analyse.md`, `13-gap-analyse-logging.md` |
+| B | Traceability matrix (dit document, §9) | Zie sectie 9 hieronder |
+| C | SBOM (CycloneDX JSON) — gegenereerd per CI-run; eindmeting sprint 3 (juni 2026) | `docs/sbom.cdx.json` (pipeline-artifact, GitHub Actions) |
+| D | SAST-output — CodeQL security-extended scan (eindmeting PR #22, 19 juni 2026) + SonarQube quality gate export | GitHub Actions artifact "codeql-results" + SonarQube dashboard |
+| E | Risicomatrix — sprint 2 (mei 2026) + update sprint 3 (18 juni 2026) | `05-risicomatrix.md` |
+| F | Bow-tie diagrammen / threat models — sprint 2/3 (mei–juni 2026) | `06-bowtie.md`, `10-cicd-bowtie.md`, `12-attack-surface.md` |
+| G | Snyk dependency-scan + Trivy container-scan — pipeline-artifact PR #19 (18 juni 2026) | GitHub Actions artifact, pipeline-run 18 juni 2026 |
 | H | CRA-mapping | Zie sectie 8 hieronder |
 | I | Security backlog / geprioriteerde verbeteraanpak | `07-security-backlog.md` |
-| J | Penetration test rapport + PoC's | `14-pentest-rapport.md` |
+| J | Penetration test rapport + PoC's — sprint 3 (juni 2026) | `14-pentest-rapport.md` |
 | K | Asset-identificatie | `03-assets.md` |
 | L | Risicocriteria | `04-risicocriteria.md` |
 | M | Bronnen (CVE-referenties, normreferenties, tools) | Zie onderkant dit document |
@@ -513,11 +511,11 @@ De module is **niet productierijp** zolang:
 
 | Norm | Maatregel | Vóór (bevinding) | Aanpassing | Na (bewijs) |
 |---|---|---|---|---|
-| NEN-7510 A.8.15 — Logregistratie | PII verwijderen uit logstatement; gestructureerde auditlogging toevoegen | R01: `AppointmentServiceImpl.java` r.1426–1432 logde naam, DOB, patiënt-ID, geslacht (april 2026, `01-gap-analyse.md`) | Fix in `AppointmentServiceImpl.java`: PII vervangen door `patient.getUuid()`; [AUDIT]-logging toegevoegd voor alle mutatiemethoden (R07 gecombineerd) | `AppointmentServiceImpl.java` (huidig): `log.info("[AUDIT] appointment.read | user={} | patientUuid={}")` — grep-check bevestigt geen `getPersonName()`, `getBirthdate()`, `getGender()` in log-aanroepen |
-| NEN-7510 A.9.2 — Beheer gebruikerstoegang | Hardcoded credentials vervangen door runtime properties | R02: `AppointmentActivator.java` r.79–82 bevatte `Appt@Export2021!` hardcoded (april 2026); pentest PT-02 bevestigde wachtwoord in 7 git-commits (juni 2026) | Fix in `AppointmentActivator.java`: constanten verwijderd; waarden via `Context.getRuntimeProperties().getProperty(...)` | `AppointmentActivator.java` r.79–82 (huidig): geen literal `Appt@Export2021!`; `getHL7ExportUrl()` leest uit runtime properties — gitleaks-scan in pipeline detecteert geen nieuwe secrets |
-| NEN-7510 A.8.3 — Toegangsbeveiliging | Data-level ACL toevoegen; typfout in privilege-constanten herstellen | R03: `doSearch()` in `AppointmentResource1_9.java` — geen eigenaarcheck (april 2026); R04: `AppointmentUtils.java` r.29–31: "Scedules" i.p.v. "Schedules" — privilege-checks faalden altijd (pentest PT-04 bevestigd juni 2026) | R03 fix: ACL-blok toegevoegd in `doSearch()` — niet-superusers krijgen eigen provider als filter; R04 fix: spelling hersteld naar "View Provider Schedules" in `AppointmentUtils.java` | `AppointmentResource1_9.java` r.199–213 (huidig): ACL-code aanwezig; `AppointmentUtils.java` (huidig): correcte spelling — runtime-foutmelding toont niet langer "Scedules" |
-| NEN-7510 A.8.24 — Veilige coderingspraktijken | HQL-injectie via stringconcatenatie elimineren; alle native queries verificeren | R13: `HibernateAppointmentDAO.java` r.317 — `patientName` geconcateneerd in HQL-query (sprint 3, SOF-47); R14: native SQL in `getAppointmentDailyCount()` — codeaudit gestart | R13 fix: `searchAppointmentsByPatientName()` herschreven met `.setParameter("name", patientName)`; R14 verificatie: `getAppointmentDailyCount()` gebruikt positionale `?` parameters — veilig bevonden | `HibernateAppointmentDAO.java` r.315–320 (huidig): `createQuery(hql).setParameter("name", patientName)` — geen stringconcatenatie; grep-check bevestigt geen `createQuery.*+` patroon in DAO-laag |
-| NEN-7510 A.8.25 — Beveiligd ontwikkelproces | SAST-gate afdwingen; secret scanning toevoegen | CICD-03: pipeline had `continue-on-error: true` op SonarQube — security gate was decoratief (score 20, sprint 2); CICD-04: geen gitleaks in pipeline — R02 had gedetecteerd moeten worden | CICD-03: `continue-on-error` verwijderd op `release/*` en `main`; CICD-04: `gitleaks/gitleaks-action` toegevoegd als eerste job; `build-and-test` is hiervan afhankelijk | `.github/workflows/pipeline.yml` (huidig): `secret-scan` job is eerste stap; `continue-on-error` ontbreekt op main/release branches — pipeline logt gitleaks-bevindingen bij elke commit |
+| NEN-7510 A.8.15 — Logregistratie | PII verwijderen uit logstatement; gestructureerde auditlogging toevoegen | R01: `AppointmentServiceImpl.java` r.1426–1432 logde naam, DOB, patiënt-ID, geslacht (april 2026, `01-gap-analyse.md`) | Fix in `AppointmentServiceImpl.java`: PII vervangen door `patient.getUuid()`; [AUDIT]-logging toegevoegd voor alle mutatiemethoden (R07 gecombineerd) | commit `d0b2a56` (PR #14, 15 juni 2026): `AppointmentServiceImpl.java` — `log.info("[AUDIT] appointment.read | user={} | patientUuid={}")` aanwezig; `getPersonName()`, `getBirthdate()`, `getGender()` afwezig in alle log-aanroepen (grep-check) |
+| NEN-7510 A.9.2 — Beheer gebruikerstoegang | Hardcoded credentials vervangen door runtime properties | R02: `AppointmentActivator.java` r.79–82 bevatte `Appt@Export2021!` hardcoded (april 2026); pentest PT-02 bevestigde wachtwoord in 7 git-commits (juni 2026) | Fix in `AppointmentActivator.java`: constanten verwijderd; waarden via `Context.getRuntimeProperties().getProperty(...)` | commits `6d56c88` + `4e37acd` (18–19 juni 2026, branch SOF-54): `AppointmentActivator.java` — literal `Appt@Export2021!` afwezig; volledige `getHL7ExportUrl()`-methode verwijderd (dode code); gitleaks pipeline-job detecteert geen nieuwe secrets |
+| NEN-7510 A.8.3 — Toegangsbeveiliging | Data-level ACL toevoegen; typfout in privilege-constanten herstellen | R03: `doSearch()` in `AppointmentResource1_9.java` — geen eigenaarcheck (april 2026); R04: `AppointmentUtils.java` r.29–31: "Scedules" i.p.v. "Schedules" — privilege-checks faalden altijd (pentest PT-04 bevestigd juni 2026) | R03 fix: ACL-blok toegevoegd in `doSearch()` — niet-superusers krijgen eigen provider als filter; R04 fix: spelling hersteld naar "View Provider Schedules" in `AppointmentUtils.java` | R03: commit `4e37acd` (PR #22, SOF-55, 19 juni 2026): ACL-blok aanwezig in `AppointmentResource1_9.java` r.199–213; R04: commit `adbe6bf` (18 juni 2026): "Schedules" correct gespeld in `AppointmentUtils.java` — runtime-foutmelding toont niet langer "Scedules" |
+| NEN-7510 A.8.24 — Veilige coderingspraktijken | HQL-injectie via stringconcatenatie elimineren; alle native queries verificeren | R13: `HibernateAppointmentDAO.java` r.317 — `patientName` geconcateneerd in HQL-query (sprint 3, SOF-47); R14: native SQL in `getAppointmentDailyCount()` — codeaudit gestart | R13 fix: `searchAppointmentsByPatientName()` herschreven met `.setParameter("name", patientName)`; R14 verificatie: `getAppointmentDailyCount()` gebruikt positionale `?` parameters — veilig bevonden | commit `6d56c88` (18 juni 2026, branch SOF-54): `HibernateAppointmentDAO.java` — `createQuery(hql).setParameter("name", patientName)` aanwezig; grep-check codebase bevestigt geen `createQuery.*+` patroon (geen stringconcatenatie in DAO-laag) |
+| NEN-7510 A.8.25 — Beveiligd ontwikkelproces | SAST-gate afdwingen; secret scanning toevoegen | CICD-03: pipeline had `continue-on-error: true` op SonarQube — security gate was decoratief (score 20, sprint 2); CICD-04: geen gitleaks in pipeline — R02 had gedetecteerd moeten worden | CICD-03: `continue-on-error` verwijderd op `release/*` en `main`; CICD-04: `gitleaks/gitleaks-action` toegevoegd als eerste job; `build-and-test` is hiervan afhankelijk | PR #19 (commit `39666a5`, Vulnerability-fixes, 18 juni 2026): `.github/workflows/pipeline.yml` — `secret-scan` als eerste job; `continue-on-error` afwezig op main/release branches; gitleaks blokkeert bij gevonden secrets bij elke push |
 
 ---
 
@@ -585,7 +583,7 @@ Voor de vastgestelde kwetsbaarheden in de eigen module is het volgende proces ge
 - [x] CRA-mapping aanwezig
 - [ ] AI-tooling verantwoording ingevuld (vul jouw eigen tekst in)
 - [x] Geen bevindingen verzwegen — open/onopgeloste bevindingen opgenomen (CICD-06, PT-08, wachtwoordrotatie R02)
-- [ ] Auteursnamen en repository-URL ingevuld
+- [ ] Auteursnamen ingevuld (repository-URL is ingevuld)
 - [ ] Document opgeslagen als artefact in de repository (PDF of Word)
 
 ---

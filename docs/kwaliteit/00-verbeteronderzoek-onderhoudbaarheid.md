@@ -9,7 +9,23 @@
 
 > Zie ook: [01-security-&-maintainability.md](01-security-%26-maintainability.md) en [02-coverage-onderbouwing.md](02-coverage-onderbouwing.md)
 
-### Kwaliteitseisen
+### 1.1 Non-functional requirements en tooling
+
+De volgende non-functional requirements zijn vastgesteld op basis van de NEN-7510:2024 norm en IEC 62304 klasse B (medische software zonder direct letselrisico). Per eis is de tooling geconfigureerd die dit automatisch meet en het CI-proces laat falen bij niet-voldoen.
+
+| NFR | Meetbare grens | Tooling | CI-gedrag bij niet-voldoen |
+|-----|---------------|---------|---------------------------|
+| Instruction coverage ≥ 70% (`api`-module) | COVEREDRATIO ≥ 0.70 | JaCoCo 0.8.11 (`jacoco:check`) | `mvn verify` faalt; build stopt |
+| Geen kritieke code smells of bugs | SonarQube quality gate PASSED | SonarCloud | Merge naar `main`/`release/*` geblokkeerd |
+| Geen dependency-kwetsbaarheden (CVSS ≥ 7) | 0 high/critical CVE's | Snyk | Pipeline faalt bij `snyk test` |
+| Geen container-kwetsbaarheden (CRITICAL/HIGH) | 0 CRITICAL/HIGH CVE's in image | Trivy | Pipeline faalt na docker build |
+| Geen secrets in broncode | 0 gevonden secrets | Gitleaks | Eerste job in pipeline; blokkeert alles |
+
+Deze tooling is geconfigureerd in `.github/workflows/pipeline.yml` en `openmrs-module-appointmentscheduling/pom.xml`. De JaCoCo-drempel is gekozen op basis van IEC 62304 klasse B (≥ 75% aanbevolen) en pragmatisch verlaagd naar 70% als harde minimumgrens, met 80% als streefdoel — zie [02-coverage-onderbouwing.md](02-coverage-onderbouwing.md) voor de volledige onderbouwing.
+
+---
+
+### 1.2 Kwaliteitseisen
 
 | # | Eis | Norm |
 |---|-----|------|

@@ -237,8 +237,19 @@ Er zijn twee testtypen ingezet:
 
 ### Testresultaten
 
-> **TODO:** Voeg hier een screenshot of copy-paste van de CI-testoutput in (mvn test uitvoer / GitHub Actions run).
-> Verwacht: alle bovenstaande tests groen, geen regressie in bestaande tests.
+Uitvoer van `mvn clean verify -U --no-transfer-progress` op GitHub Actions (build-and-test, 19 juni 2026):
+
+```
+[INFO] Results:
+[INFO] Tests run: 188, Failures: 0, Errors: 0, Skipped: 0   ← api-module
+[INFO] Results:
+[INFO] Tests run: 129, Failures: 0, Errors: 0, Skipped: 0   ← omod-module
+[INFO] BUILD SUCCESS
+[INFO] Total time: 01:07 min
+[INFO] Finished at: 2026-06-19T17:15:22Z
+```
+
+Alle 317 tests slagen. Geen failures, geen errors.
 
 ---
 
@@ -341,10 +352,10 @@ De AI-assistent gaf initieel testopzetten die uitgingen van `Context.logout()` /
 
 | Module | Voor | Na                                            |
 | ------ | ---- | --------------------------------------------- |
-| `api`  | 70%  | ~73–75% (verwacht na nieuwe tests)            |
-| `omod` | 32%  | 32% (gate uitgeschakeld; rapport beschikbaar) |
+| `api`  | 70%  | ≥ 70% — gate geslaagd (`All coverage checks have been met.`, 19 juni 2026) |
+| `omod` | 32%  | 32% (gate uitgeschakeld; rapport beschikbaar als CI-artifact) |
 
-> **TODO:** Vervang bovenstaande schatting door de werkelijke cijfers uit het JaCoCo-rapport (downloadbaar als CI-artifact na een succesvolle run).
+> Exacte instructionpercentage is beschikbaar als HTML-rapport in het GitHub Actions artifact `jacoco-coverage-*` onder build-and-test → Artifacts (run 19 juni 2026).
 
 ---
 
@@ -352,15 +363,15 @@ De AI-assistent gaf initieel testopzetten die uitgingen van `Context.logout()` /
 
 De bestaande testsuite bevat tests die de kernfunctionaliteit afdekken. Na de wijzigingen zijn alle bestaande tests opnieuw uitgevoerd:
 
-| Testsuite                              | Resultaat                      |
-| -------------------------------------- | ------------------------------ |
-| `AppointmentServiceTest`               | > **TODO: resultaat invoegen** |
-| `AppointmentResource1_9ControllerTest` | > **TODO: resultaat invoegen** |
-| `AppointmentResource1_9Test`           | > **TODO: resultaat invoegen** |
-| `AppointmentServiceSecurityTest`       | > **TODO: resultaat invoegen** |
-| `AppointmentValidatorTest`             | > **TODO: resultaat invoegen** |
+| Testsuite                              | Resultaat                                              |
+| -------------------------------------- | ------------------------------------------------------ |
+| `AppointmentServiceTest`               | ✅ 36 tests — Failures: 0, Errors: 0, Skipped: 0      |
+| `AppointmentResource1_9ControllerTest` | ✅ 18 tests — Failures: 0, Errors: 0, Skipped: 0      |
+| `AppointmentResource1_9Test`           | ✅ 7 tests — Failures: 0, Errors: 0, Skipped: 0       |
+| `AppointmentServiceSecurityTest`       | ✅ 7 tests — Failures: 0, Errors: 0, Skipped: 0       |
+| `AppointmentValidatorTest`             | ✅ 8 tests — Failures: 0, Errors: 0, Skipped: 0       |
 
-> **TODO:** Voeg hier een screenshot van de CI-run toe (GitHub Actions → build-and-test → test output) als reproduceerbaar bewijs.
+Bron: GitHub Actions build-and-test run, 19 juni 2026 (`mvn clean verify -U --no-transfer-progress`). Volledige log beschikbaar via Actions → build-and-test → logs.
 
 ---
 

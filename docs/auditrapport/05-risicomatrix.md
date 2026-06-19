@@ -6,6 +6,8 @@
 **Versie:** 2
 **Norm:** NEN-7510:2024
 
+---
+
 > **Wijzigingen t.o.v. versie 1 (SOF-27):**
 >
 > - R13 toegevoegd: SQL Injection — nieuw geïdentificeerd in threat modelling sessie SOF-42
@@ -289,18 +291,18 @@ Aanvaller (geauthenticeerd, E1/E2/E3)
 
 ## Samenvatting prioriteiten
 
-| Prioriteit                 | ID      | Risico                          | Score  |
-| -------------------------- | ------- | ------------------------------- | ------ |
-| 🔴 Onmiddellijk aanpakken  | R01     | PII-logging                     | 25     |
-| 🔴 Onmiddellijk aanpakken  | R02     | Hardcoded credentials           | 20     |
-| 🔴 Onmiddellijk aanpakken  | R03     | Geen data-level ACL             | 16     |
-| 🔴 Onmiddellijk aanpakken  | R04     | Typfouten privilege-constanten  | 15     |
-| 🔴 Onmiddellijk aanpakken  | **R14** | **SQL Injection**               | **15** |
-| 🟠 Mitigatieplan opstellen | R05     | Lege @Authorized annotaties     | 12     |
-| 🟠 Mitigatieplan opstellen | R06     | Geen MFA                        | 12     |
-| 🟠 Mitigatieplan opstellen | R07     | Geen audit logging              | 12     |
-| 🟠 Mitigatieplan opstellen | R08     | Geen brute-force beveiliging    | 12     |
-| 🟠 Mitigatieplan opstellen | R11     | Void/retire-vlaggen niet gezet  | 12     |
-| 🟠 Mitigatieplan opstellen | R09     | ConcurrentModificationException | 9      |
-| 🟢 Monitoren               | R10     | Deprecated Date-API             | 6      |
-| 🟢 Monitoren               | R12     | Ongebruikte variabele           | 2      |
+| Prioriteit                 | ID  | Risico                          | Score |
+| -------------------------- | --- | ------------------------------- | ----- |
+| 🔴 Onmiddellijk aanpakken  | R01 | PII-logging                     | 25    |
+| 🔴 Onmiddellijk aanpakken  | R02 | Hardcoded credentials           | 20    |
+| 🔴 Onmiddellijk aanpakken  | R03 | Geen data-level ACL             | 16    |
+| 🔴 Onmiddellijk aanpakken  | R04 | Typfouten privilege-constanten  | 15    |
+| 🔴 Onmiddellijk aanpakken  | R14 | SQL Injection                   | 15    |
+| 🟠 Mitigatieplan opstellen | R05 | Lege @Authorized annotaties     | 12    |
+| 🟠 Mitigatieplan opstellen | R06 | Geen MFA                        | 12    |
+| 🟠 Mitigatieplan opstellen | R07 | Geen audit logging              | 12    |
+| 🟠 Mitigatieplan opstellen | R08 | Geen brute-force beveiliging    | 12    |
+| 🟠 Mitigatieplan opstellen | R11 | Void/retire-vlaggen niet gezet  | 12    |
+| 🟠 Mitigatieplan opstellen | R09 | ConcurrentModificationException | 9     |
+| 🟢 Monitoren               | R10 | Deprecated Date-API             | 6     |
+| 🟢 Monitoren               | R12 | Ongebruikte variabele           | 2     |

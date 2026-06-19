@@ -43,8 +43,8 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 
 ### 3.1 Module-code bevindingen
 
-| ID  | Bevinding                                                    | Score | Zone      | Status  | Prioriteit   | NEN-7510 | Eigenaar |
-| --- | ------------------------------------------------------------ | :---: | --------- | ------- | ------------ | -------- | -------- |
+| ID  | Bevinding                                                    | Score | Zone      | Status      | Prioriteit   | NEN-7510 | Eigenaar |
+| --- | ------------------------------------------------------------ | :---: | --------- | ----------- | ------------ | -------- | -------- |
 | R01 | PII in logbestanden                                          |  25   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.15   | Dev-team |
 | R02 | Hardcoded credentials in broncode                            |  20   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.9.2    | Dev-team |
 | R03 | Geen data-level ACL                                          |  16   | 🔴 Rood   | ✅ Opgelost | P1 — Kritiek | A.8.3    | Dev-team |
@@ -54,7 +54,7 @@ De scope van dit project is de **OpenMRS Appointment Scheduling module** (`openm
 | R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet    |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
 | R09 | `ConcurrentModificationException` in `cleanOpenAppointments` |   9   | 🟠 Oranje | ✅ Opgelost | P2 — Hoog    | A.8.6    | Dev-team |
 | R13 | HQL-injectie in `searchAppointmentsByPatientName`            |  12   | 🟠 Oranje | ✅ Opgelost | P2 — Midden  | A.8.24   | Dev-team |
-| **R14** | **SQL Injection via gebruikersinvoer of opgeslagen data**    | **15** | **🔴 Rood** | **✅ Opgelost** | **P2 — Hoog** | **A.8.24** | **Dev-team** |
+| R14 | SQL Injection via gebruikersinvoer of opgeslagen data        |  15   | 🔴 Rood   | ✅ Opgelost | P2 — Hoog    | A.8.24   | Dev-team |
 
 > **Toelichting R14-prioriteit:** Hoewel de score (15) in de rode zone valt en gelijkstaat aan R04, is R14 als P2 geclassificeerd omdat Hibernate ORM een baseline-bescherming biedt via HQL en de kwetsbaarheid nog niet pinpoint gelokaliseerd is in een specifiek codepad. Verificatie en codeaudit zijn de eerste stap. Mocht de audit een concreet onbeveiligd codepad blootleggen, wordt de prioriteit bijgesteld naar P1.
 
@@ -407,7 +407,7 @@ Snyk op Maven-dependencies (blokkeert bij CVSS ≥ 7, policy via `.snyk`); Trivy
 
 ### CICD-06 — Niet-gepinde GitHub Actions
 
-**Status: 📋 Gepland (sprint 4)**
+**Status: 📋 Nog uit te voeren.**
 
 **Actie:** Pin alle externe Actions op volledige SHA-hashes:
 
@@ -473,7 +473,7 @@ Snyk op Maven-dependencies (blokkeert bij CVSS ≥ 7, policy via `.snyk`); Trivy
 
 ### Restrisico na volledige uitvoering
 
-Na implementatie van alle P1-P3 maatregelen — inclusief R14 (SQL Injection) — resteert een restrisico op:
+Na implementatie van alle P1-P3 maatregelen — resteert een restrisico op:
 
 - Platformniveau (OpenMRS EOL, Java 7, geen MFA) — verantwoordelijkheid opdrachtgever
 - Organisatieniveau (GitHub governance, environment protection) — verantwoordelijkheid projectbeheerder

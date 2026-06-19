@@ -1,4 +1,4 @@
-# 00 - Security & Maintainability - OpenMRS Appointment Scheduler
+# 01 - Security & Maintainability - OpenMRS Appointment Scheduler
 
 **Sprint:** 1
 **Taak:** SOF-22: GAP-Analyse
@@ -44,7 +44,7 @@ Productiewachtwoord en JDBC-verbindingsstring staan hardcoded in de broncode en 
 
 ---
 
-### S2 — PII-logging (kritiek) — ✅ OPGELOST
+### S2 — PII-logging (kritiek) — OPGELOST
 
 **Bestand:** `AppointmentServiceImpl.java`
 
@@ -123,8 +123,8 @@ Variabele wordt aangemaakt maar nooit gebruikt. **Niet conform M5.**
 
 | Eis                              | Status        |
 | -------------------------------- | ------------- |
-| S1 — Geen hardcoded credentials  | Opgelost ✅   |
-| S2 — Geen PII in logs            | Opgelost ✅   |
+| S1 — Geen hardcoded credentials  | Opgelost      |
+| S2 — Geen PII in logs            | Opgelost      |
 | S3 — Toegangscontrole            | Deels conform |
 | M1 — Geen deprecated API         | Niet conform  |
 | M2 — Methoden correct            | Niet conform  |

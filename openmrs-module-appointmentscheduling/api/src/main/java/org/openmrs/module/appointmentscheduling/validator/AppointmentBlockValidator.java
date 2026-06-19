@@ -65,7 +65,7 @@ public class AppointmentBlockValidator implements Validator {
 			ValidationUtils.rejectIfEmpty(errors, "endDate", "appointmentscheduling.AppointmentBlock.emptyEndDate");
 			ValidationUtils.rejectIfEmpty(errors, "location", "appointmentscheduling.AppointmentBlock.emptyLocation");
 
-            if (Context.getService(AppointmentService.class).getOverlappingAppointmentBlocks(appointmentBlock).size() > 0) {
+            if (!Context.getService(AppointmentService.class).getOverlappingAppointmentBlocks(appointmentBlock).isEmpty()) {
 				errors.rejectValue("provider", "appointmentscheduling.AppointmentBlock.error.appointmentBlockOverlap");
 			}
 

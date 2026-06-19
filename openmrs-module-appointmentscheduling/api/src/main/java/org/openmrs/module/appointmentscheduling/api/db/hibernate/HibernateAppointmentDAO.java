@@ -85,7 +85,7 @@ public class HibernateAppointmentDAO extends HibernateSingleClassDAO
 				.getCurrentSession().createQuery(query)
 				.setParameter("patient", patient).list();
 
-		if (appointment.size() > 0)
+		if (!appointment.isEmpty())
 			return (Appointment) appointment.get(0);
 		else
 			return null;
@@ -109,7 +109,7 @@ public class HibernateAppointmentDAO extends HibernateSingleClassDAO
 				stringQuery += " AND appointment.timeSlot.endDate <= :endDate";
 			if (provider != null)
 				stringQuery += " AND appointment.timeSlot.appointmentBlock.provider = :provider";
-			if (statuses != null && statuses.size() > 0)
+			if (statuses != null && !statuses.isEmpty())
 				stringQuery += " AND appointment.status IN (:statuses)";
 			if (visitType != null)
 				stringQuery += " AND appointment.appointmentType.visitType = :visitType";
@@ -132,7 +132,7 @@ public class HibernateAppointmentDAO extends HibernateSingleClassDAO
 				query.setParameter("endDate", toDate);
 			if (provider != null)
 				query.setParameter("provider", provider);
-			if (statuses != null && statuses.size() > 0)
+			if (statuses != null && !statuses.isEmpty())
 				query.setParameterList("statuses", statuses);
 			if (visitType != null)
 				query.setParameter("visitType", visitType);

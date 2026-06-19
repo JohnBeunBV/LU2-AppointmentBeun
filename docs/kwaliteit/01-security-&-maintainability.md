@@ -134,7 +134,7 @@ Variabele wordt aangemaakt maar nooit gebruikt. **Niet conform M5.**
 | S2 — Geen PII in logs            | Niet conform  |
 | S3 — Toegangscontrole            | Deels conform |
 | M1 — Geen deprecated API         | Niet conform  |
-| M2 — Methoden correct            | Niet conform  |
+| M2 — Methoden correct            | Conform ✅    |
 | M3 — Constanten correct          | Niet conform  |
 | M4 — Veilige iteratie            | Niet conform  |
 | M5 — Geen ongebruikte variabelen | Niet conform  |

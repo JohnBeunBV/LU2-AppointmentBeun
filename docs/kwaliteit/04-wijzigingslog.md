@@ -38,6 +38,20 @@ De UUID is pseudoniem: zonder de koppeltabel in de database is een UUID niet her
 
 **Substitute Safe Identifier** — directe persoonsgegevens vervangen door een pseudoniem sleutel (UUID) die niet buiten de applicatiecontext herleidbaar is.
 
+### SOLID-principe
+
+**Single Responsibility Principle (SRP):** de loggingverantwoordelijkheid mag niet ook de verantwoordelijkheid dragen voor het formatteren van persoonsgegevens. Door alleen de UUID te loggen, houdt de methode één doel: een audittrail bijhouden, niet een patiëntprofiel.
+
+### Alternatief en motivatie
+
+| Alternatief | Reden afgewezen |
+|---|---|
+| Logging volledig verwijderen | Verlies van audittrail — vereist door NEN-7510 §8.17 (logging van toegang tot medische data) |
+| Eigen maskeerformatter schrijven (`"***"` in plaats van naam) | Meer code, hogere onderhoudslast; UUID is al aanwezig in het domeinmodel en is pseudoniem zonder extra logica |
+| Naam hashen (SHA-256) | Hash is technisch niet herleidbaar maar juridisch niet altijd als pseudoniem erkend; UUID voldoet eenvoudiger aan AVG art. 4(5) |
+
+**Keuze:** UUID logging is de minimaal invasieve oplossing die de audittrail intact houdt en direct voldoet aan AVG en NEN-7510.
+
 ### Gewijzigde bestanden
 
 | Bestand                                    | Wijziging                                                                   |
@@ -90,6 +104,18 @@ for (Map.Entry<AppointmentType, Integer> counter : counters.entrySet())
 
 **Ontwerppatroon:** Guard Clause — valideer de precondition vóór de operatie.
 
+**SOLID-principe:** **Single Responsibility Principle (SRP)** — validatie van invoer is een aparte verantwoordelijkheid van de rekenlogica. Door de guard clause toe te voegen, splitsen we "is de invoer geldig?" af van "bereken het gemiddelde".
+
+**Alternatief en motivatie:**
+
+| Alternatief | Reden afgewezen |
+|---|---|
+| `try-catch ArithmeticException` | Exception-driven control flow is duurder en minder leesbaar; uitzonderingen zijn bedoeld voor uitzonderlijke situaties, niet voor verwachte randgevallen |
+| `Optional<Integer>` retourneren | Vereist aanpassing van alle aanroepers; disproportioneel voor een kleine nulcheck |
+| Teller initialiseren op 1 | Maskeert het onderliggende probleem in plaats van het op te lossen |
+
+**Keuze:** Guard Clause is Java 6-compatibel, minimaal invasief en communiceert de precondition expliciet aan toekomstige lezers.
+
 ---
 
 ### Fix 2 — Deprecated Date-API (M1)
@@ -128,6 +154,18 @@ return dateCal.getTime();
 
 **Ontwerppatroon:** Substitute Deprecated API — vervang verouderde methoden door hun moderne equivalenten zonder gedragswijziging.
 
+**SOLID-principe:** **Open/Closed Principle (OCP)** — de bestaande gedragscontracten van `getDateAndTime()` blijven ongewijzigd (gesloten voor modificatie van gedrag), terwijl de implementatie intern verbeterd wordt (open voor verbetering van kwaliteit). **SRP** — datumconstructie en tijdinstelling worden nu expliciet gescheiden via de Calendar-aanroepen.
+
+**Alternatief en motivatie:**
+
+| Alternatief | Reden afgewezen |
+|---|---|
+| `java.time.LocalDateTime` (Java 8) | Vereist Java 8; de module is gecompileerd op source level 6/8 maar draait op JVM 7 — `java.time` is niet beschikbaar op de runtime |
+| Joda-Time bibliotheek | Extra dependency; disproportioneel voor één methode |
+| `new GregorianCalendar(...)` constructor | Functioneel gelijkwaardig maar minder leesbaar dan de setter-aanpak; Calendar is al geïmporteerd |
+
+**Keuze:** `Calendar` is al aanwezig in de codebase, Java 6-compatibel en levert identiek gedrag aan de deprecated `Date`-constructors.
+
 ---
 
 ### Fix 3 — Unused assignment (M5)
@@ -149,6 +187,17 @@ De variabele `satisfyingConstraints` werd aangemaakt maar nooit gelezen. Dit is 
 Variabele volledig verwijderd — de omliggende logica werkt zonder deze variabele.
 
 **Ontwerppatroon:** Remove Dead Code — code zonder effect verwijderen.
+
+**SOLID-principe:** **Single Responsibility Principle (SRP)** — een variabele die nooit wordt gelezen draagt geen verantwoordelijkheid; haar aanwezigheid suggereert ten onrechte dat ze een rol speelt in de logica.
+
+**Alternatief en motivatie:**
+
+| Alternatief | Reden afgewezen |
+|---|---|
+| Variabele behouden met commentaar `// unused` | Voegt ruis toe; Qodana blijft de warning rapporteren; intentie al duidelijk uit verwijdering |
+| Variabele behouden als `@SuppressWarnings("unused")` | Maskeert het probleem in plaats van het op te lossen |
+
+**Keuze:** Verwijdering is de enige oplossing die de codebase daadwerkelijk kleiner en begrijpelijker maakt zonder suppression-hacks.
 
 ---
 
@@ -189,6 +238,18 @@ return !inconsultationAppointments.isEmpty();
 
 **Ontwerppatroon:** Idiomatic API Usage — gebruik de meest expressieve en semantisch correcte methode.
 
+**SOLID-principe:** **Interface Segregation Principle (ISP)** — `Collection` biedt `isEmpty()` als een gespecialiseerde methode precies voor dit doel; `size() == 0` omzeilt die interface en gebruikt een zwaardere operatie voor een simplere intentie.
+
+**Alternatief en motivatie:**
+
+| Alternatief | Reden afgewezen |
+|---|---|
+| `size() == 0` behouden | Minder leesbaar; vraagt om een extra mentale stap; werkt maar communiceert intentie slechter |
+| `Optional` of null-check toevoegen | Disproportioneel — de collecties zijn nooit null op de aanroepplekken in kwestie |
+| `Collections.emptyList()` vergelijking | Werkt niet voor alle implementaties; semantisch verkeerd |
+
+**Keuze:** `isEmpty()` is de idiomatische Java-aanpak, heeft gelijke semantiek, en sommige collectie-implementaties optimaliseren hem intern.
+
 ---
 
 ### Fix 5 — String concatenation in loop (performance)
@@ -223,6 +284,19 @@ return ans.toString();
 
 **Ontwerppatroon:** Replace String Concatenation with StringBuilder — standaard refactoring voor string-opbouw in loops.
 
+**SOLID-principe:** **Open/Closed Principle (OCP)** — de methode-interface (`buildLocationList`) blijft gesloten voor wijziging; alleen de interne implementatiestrategie wordt verbeterd. Dit maakt de methode ook open voor grotere locatiebomen zonder performance-regressie.
+
+**Alternatief en motivatie:**
+
+| Alternatief | Reden afgewezen |
+|---|---|
+| `String.join(",", list)` | Vereist Java 8; runtime is JVM 7 — niet beschikbaar |
+| `StringJoiner` | Eveneens Java 8-only |
+| Streams met `Collectors.joining(",")` | Java 8 — niet beschikbaar op target runtime |
+| `+=` in loop behouden | Kwadratische tijdcomplexiteit; Qodana rapporteert de warning; bij grote locatiebomen duidelijk merkbaar |
+
+**Keuze:** `StringBuilder` is de standaard Java 6-compatibele oplossing voor efficiënte string-opbouw in loops.
+
 ---
 
 ### Fix 6 — Redundant ternary `? true : false` (leesbaarheid)
@@ -248,6 +322,17 @@ return description.length() > 1024;
 ```
 
 **Ontwerppatroon:** Simplify Boolean Expression — verwijder overtollige logica.
+
+**SOLID-principe:** **Single Responsibility Principle (SRP)** — een returnstatement heeft één taak: een waarde teruggeven. De ternary voegt een tweede laag toe (een conditie die exact dezelfde waarde herhaalt) die geen nieuwe verantwoordelijkheid draagt maar wel cognitieve overhead toevoegt.
+
+**Alternatief en motivatie:**
+
+| Alternatief | Reden afgewezen |
+|---|---|
+| Ternary behouden met commentaar | Commentaar op triviaal gedrag voegt ruis toe; de vereenvoudigde versie is zelf-documenterend |
+| `Boolean.valueOf(expressie)` | Geen verbetering: extra methode-aanroep voor hetzelfde resultaat |
+
+**Keuze:** Directe teruggave van de booleaanse expressie is de kortste, meest leesbare en meest idiomatische Java-schrijfwijze.
 
 ---
 

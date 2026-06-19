@@ -25,6 +25,7 @@
 | M3  | Geen typfouten in constantenamen  | Privilege-constanten in `AppointmentUtils` moeten exact overeenkomen met de waarden die in de database zijn geregistreerd    |
 | M4  | Correcte iteratie over collecties | Verwijderen van elementen uit een lijst tijdens iteratie mag alleen via `Iterator.remove()`, niet via directe lijstoperaties |
 | M5  | Geen ongebruikte variabelen       | Variabelen die worden aangemaakt maar nooit gebruikt (bijv. `satisfyingConstraints`) moeten worden verwijderd                |
+| M6  | Code coverage                     | Minimale code coverage vereist van 70%. Streven naar 80%.                                                                    |
 
 ---
 

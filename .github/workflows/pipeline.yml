@@ -72,15 +72,22 @@ jobs:
 
       # ── SAST: SonarQube ─────────────────────────────────────────────────────
       # Mitigeert: CICD-03 | NEN-7510: 8.29
-      - name: SonarQube Analysis (develop — waarschuwing)
-        if: github.ref == 'refs/heads/develop'
+      # Free plan: only main branch pushes and pull requests are supported.
+      # SONAR_HOST_URL is a repository variable (vars.*), not a secret.
+      # SonarQube server bootstrap sends Java-17-compiled scanner JARs,
+      # so we temporarily switch JAVA_HOME to JDK 17 for this step only.
+      - name: SonarQube Analysis
+        if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mvn sonar:sonar \
-            -Dsonar.projectKey=${{ github.repository }} \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.qualitygate.wait=true
-        continue-on-error: true
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
       - name: SonarQube Analysis (release & main — hard gate)
         if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
@@ -126,7 +133,6 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: openmrs-module-appointmentscheduling/snyk.sarif
-        continue-on-error: true
 
       # ── SBOM generatie + versioned opslag ────────────────────────────────────
       # NEN-7510: 8.8 (inventarisatie componenten) + 8.9 (configuratiebeheer)
@@ -200,9 +206,86 @@ jobs:
             openmrs-module-appointmentscheduling/snyk.sarif
             openmrs-module-appointmentscheduling/snyk-sca.json
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SAST: CodeQL — hard gate, blokkeert bij bevindingen
+  # Mitigeert: CICD-03 | NEN-7510: 8.29
+  # Runs parallel to build-and-test. Compiles independently (CodeQL instruments
+  # the compiler to track data flow — it cannot reuse build-and-test output).
+  # ─────────────────────────────────────────────────────────────────────────────
+  codeql:
+    name: CodeQL SAST
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: "8"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+          queries: security-extended
+
+      - name: Build for CodeQL
+        working-directory: ./openmrs-module-appointmentscheduling
+        run: mvn clean compile -U --no-transfer-progress -DskipTests
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: codeql-java
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SAST: Qodana — code kwaliteit en bug detectie (JetBrains inspections)
+  # Mitigeert: CICD-03 | NEN-7510: 8.29
+  # Non-blocking: levert bevindingen op maar blokkeert de pipeline niet.
+  # ─────────────────────────────────────────────────────────────────────────────
+  qodana:
+    name: Qodana Code Quality
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2024.3
+        with:
+          project-dir: ./openmrs-module-appointmentscheduling
+          args: --fail-threshold,1000
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_281741559 }}
+
+      - name: Upload Qodana SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ runner.temp }}/qodana/results/qodana.sarif.json
+          category: qodana
+
   docker-build:
     name: Build & Push Docker Image
-    needs: build-and-test
+    needs: [build-and-test, codeql]
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.DEPLOYMENTS_ENABLED == 'true'
     permissions:
@@ -300,7 +383,6 @@ jobs:
         with:
           sarif_file: trivy-image-results.sarif
           category: trivy-container
-        continue-on-error: true
 
   deploy-test:
     name: Deploy to Test

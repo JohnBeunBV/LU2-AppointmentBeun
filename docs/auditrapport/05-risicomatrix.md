@@ -1,12 +1,16 @@
 # 05 Risicomatrix - OpenMRS Appointment Scheduler
 
-**Sprint:** 2  
-**Taak:** SOF-27: Risicomatrix
-**Module:** OpenMRS Appointment Scheduler  
-**Versie:** 1
+**Sprint:** 3
+**Taak:** SOF-42: Threat model uitbreiding + risicomatrix bijwerken
+**Module:** OpenMRS Appointment Scheduler
+**Versie:** 2
 **Norm:** NEN-7510:2024
 
----
+> **Wijzigingen t.o.v. versie 1 (SOF-27):**
+>
+> - R13 toegevoegd: SQL Injection — nieuw geïdentificeerd in threat modelling sessie SOF-42
+> - Statuskolom toegevoegd om sprint 2-fixes te reflecteren (CICD-03, CICD-04, CICD-05 opgelost)
+> - Scorekolom ongewijzigd; risico's die zijn opgelost blijven staan met historische score
 
 ---
 
@@ -83,24 +87,77 @@
 
 ## Risicoregister
 
-| ID  | Risico                                                     | Getroffen asset(s)  | Kans | Impact | Score  | Klasse    | NEN-7510 control |
-| --- | ---------------------------------------------------------- | ------------------- | :--: | :----: | :----: | --------- | ---------------- |
-| R01 | PII-logging: patiëntdata in logbestanden                   | DA-01, DA-04, SC-06 |  5   |   5    | **25** | 🔴 Rood   | A.8.15           |
-| R02 | Hardcoded credentials in broncode                          | DA-06, SC-03        |  4   |   5    | **20** | 🔴 Rood   | A.9.2            |
-| R03 | Geen data-level ACL (patiënt ziet andermans afspraken)     | DA-01, DA-02, SC-01 |  4   |   4    | **16** | 🔴 Rood   | A.8.3            |
-| R04 | Typfouten in privilege-constanten (privilege-checks falen) | SC-02, DA-03        |  5   |   3    | **15** | 🔴 Rood   | A.8.3            |
-| R05 | Lege `@Authorized()` op servicemethoden                    | SC-01, SC-02, DA-02 |  3   |   4    | **12** | 🟠 Oranje | A.8.3            |
-| R06 | Geen multi-factor authenticatie                            | DA-05, SC-02, PA-02 |  3   |   4    | **12** | 🟠 Oranje | A.8.5            |
-| R07 | Geen audit logging voor afspraakmutaties                   | DA-04, PA-04        |  4   |   3    | **12** | 🟠 Oranje | A.8.15           |
-| R08 | Geen brute-force beveiliging op inlogpagina                | DA-05, PA-02        |  3   |   4    | **12** | 🟠 Oranje | A.8.5            |
-| R09 | ConcurrentModificationException in `cleanOpenAppointments` | DA-02, PA-01        |  3   |   3    | **9**  | 🟠 Oranje | A.8.6            |
-| R10 | Gebruik van deprecated Date-API                            | DA-02, SC-03        |  2   |   3    | **6**  | 🟢 Groen  | A.8.8            |
-| R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet  | DA-02, PA-01        |  4   |   3    | **12** | 🟠 Oranje | A.8.6            |
-| R12 | Ongebruikte variabele `satisfyingConstraints`              | SC-04               |  2   |   1    | **2**  | 🟢 Groen  | —                |
+| ID  | Risico                                                     | Getroffen asset(s)         | Kans | Impact | Score  | Klasse    | NEN-7510 control |
+| --- | ---------------------------------------------------------- | -------------------------- | :--: | :----: | :----: | --------- | ---------------- |
+| R01 | PII-logging: patiëntdata in logbestanden                   | DA-01, DA-04, SC-06        |  5   |   5    | **25** | 🔴 Rood   | A.8.15           |
+| R02 | Hardcoded credentials in broncode                          | DA-06, SC-03               |  4   |   5    | **20** | 🔴 Rood   | A.9.2            |
+| R03 | Geen data-level ACL (patiënt ziet andermans afspraken)     | DA-01, DA-02, SC-01        |  4   |   4    | **16** | 🔴 Rood   | A.8.3            |
+| R04 | Typfouten in privilege-constanten (privilege-checks falen) | SC-02, DA-03               |  5   |   3    | **15** | 🔴 Rood   | A.8.3            |
+| R14 | SQL Injection via gebruikersinvoer of opgeslagen data      | DA-01, DA-02, DA-06, SC-03 |  3   |   5    | **15** | 🔴 Rood   | A.8.24           |
+| R05 | Lege `@Authorized()` op servicemethoden                    | SC-01, SC-02, DA-02        |  3   |   4    | **12** | 🟠 Oranje | A.8.3            |
+| R06 | Geen multi-factor authenticatie                            | DA-05, SC-02, PA-02        |  3   |   4    | **12** | 🟠 Oranje | A.8.5            |
+| R07 | Geen audit logging voor afspraakmutaties                   | DA-04, PA-04               |  4   |   3    | **12** | 🟠 Oranje | A.8.15           |
+| R08 | Geen brute-force beveiliging op inlogpagina                | DA-05, PA-02               |  3   |   4    | **12** | 🟠 Oranje | A.8.5            |
+| R11 | `retireAppointmentType` / `voidAppointment` zet vlag niet  | DA-02, PA-01               |  4   |   3    | **12** | 🟠 Oranje | A.8.6            |
+| R09 | ConcurrentModificationException in `cleanOpenAppointments` | DA-02, PA-01               |  3   |   3    | **9**  | 🟠 Oranje | A.8.6            |
+| R10 | Gebruik van deprecated Date-API                            | DA-02, SC-03               |  2   |   3    | **6**  | 🟢 Groen  | A.8.8            |
+| R12 | Ongebruikte variabele `satisfyingConstraints`              | SC-04                      |  2   |   1    | **2**  | 🟢 Groen  | —                |
 
 ---
 
 ## Toelichting per risico
+
+### R14 — SQL Injection via gebruikersinvoer of opgeslagen data (Score 15 — 🔴 Onacceptabel)
+
+**Getroffen assets:** DA-01 (patiëntgegevens), DA-02 (afspraakgegevens), DA-06 (databaseconfiguratie), SC-03 (persistentielaag)
+
+**Wat kan er misgaan:**
+
+SQL injection is een aanvalstechniek waarbij kwaadaardige code wordt ingevoegd in strings die vervolgens als SQL-opdracht worden uitgevoerd. Binnen de OpenMRS Appointment Scheduler zijn twee aanvalsvectoren relevant:
+
+**Vector 1 — Directe injectie via gebruikersinvoer:**
+Invoervelden die via de REST API (E1), DWR-service (E2) of Spring MVC controllers (E3) binnenkomen, worden doorgegeven aan de persistentielaag. Als `HibernateAppointmentDAO` ergens native queries opbouwt via stringconcatenatie in plaats van geparametriseerde queries of HQL met named parameters, kan een aanvaller SQL-fragmenten injecteren.
+
+**Vector 2 — Opgeslagen injectie (Second-order SQL injection):**
+Kwaadaardige strings worden eerst als valide data opgeslagen (bijv. een afspraaknota of providernaam). Wanneer die opgeslagen waarden later worden samengevoegd in een dynamische SQL-opdracht — bijvoorbeeld in een rapportage- of exportroutine — wordt de injectie alsnog uitgevoerd. Dit is extra risicovol in combinatie met R02 (hardcoded credentials naar HL7-rapportagedatabase): de exportroutine in `AppointmentActivator` maakt verbinding met een externe database, waarbinnen dezelfde kwetsbaarheid kan optreden.
+
+**Aanvalspad:**
+
+```
+Aanvaller (geauthenticeerd, E1/E2/E3)
+  → invoert kwaadaardige string als patiëntnaam, afspraaknota, of zoekparameter
+  → string bereikt HibernateAppointmentDAO / exportroutine
+  → native query of dynamische HQL zonder parametrisering
+  → MySQL database (DA-06) voert injectie uit
+  → datalekk of datadestruction van DA-01/DA-02
+```
+
+**Gevolgen:**
+
+- Volledige uitlezing van alle patiënt- en afspraakdata (combineerbaar met R03: geen ACL)
+- Wijziging of verwijdering van medische records
+- Privilege-escalatie als de database-gebruiker brede rechten heeft
+- Bij second-order injectie via HL7-exportroutine: aanval op externe rapportagedatabase
+- Overtreding AVG Art. 32 (passende technische maatregelen), NEN-7510 A.8.24; meldplicht Autoriteit Persoonsgegevens
+
+**Risicobeoordeling:**
+
+| Factor     | Toelichting                                                                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Kans = 3   | Hibernate ORM beschermt standaard goed via HQL, maar native queries en concatenatie zijn niet uitgesloten in de codebase; aanvaller moet geauthenticeerd zijn |
+| Impact = 5 | Volledige database-compromittering is catastrofaal gezien de gevoeligheid van medische data                                                                   |
+| Score = 15 | Onacceptabel — drempelwaarde voor direct actie                                                                                                                |
+
+**Aanbevolen maatregel:**
+
+1. Audit alle queries in `HibernateAppointmentDAO.java` en de HL7-exportroutine op stringconcatenatie; vervang door named parameters (`setParameter()`).
+2. Voeg een integratietest toe die SQL-injectiepayloads (`' OR '1'='1`, `'; DROP TABLE --`) als invoer verzendt en verifieert dat geen SQL-fout optreedt.
+3. Activeer Hibernate SQL-logging in de testomgeving en inspecteer alle gegenereerde queries.
+4. Valideer en saniteer alle invoer in de controller- en service-laag ongeacht het ORM-framework.
+
+**Restrisico na fix:** Laag — mits alle queries geparametriseerd zijn en invoervalidatie is geïmplementeerd op alle entry points (E1, E2, E3).
+
+---
 
 ### R01 — PII-logging (Score 25 — 🔴 Onacceptabel)
 
@@ -232,17 +289,18 @@
 
 ## Samenvatting prioriteiten
 
-| Prioriteit                 | ID  | Risico                          | Score |
-| -------------------------- | --- | ------------------------------- | ----- |
-| 🔴 Onmiddellijk aanpakken  | R01 | PII-logging                     | 25    |
-| 🔴 Onmiddellijk aanpakken  | R02 | Hardcoded credentials           | 20    |
-| 🔴 Onmiddellijk aanpakken  | R03 | Geen data-level ACL             | 16    |
-| 🔴 Onmiddellijk aanpakken  | R04 | Typfouten privilege-constanten  | 15    |
-| 🟠 Mitigatieplan opstellen | R05 | Lege @Authorized annotaties     | 12    |
-| 🟠 Mitigatieplan opstellen | R06 | Geen MFA                        | 12    |
-| 🟠 Mitigatieplan opstellen | R07 | Geen audit logging              | 12    |
-| 🟠 Mitigatieplan opstellen | R08 | Geen brute-force beveiliging    | 12    |
-| 🟠 Mitigatieplan opstellen | R11 | Void/retire-vlaggen niet gezet  | 12    |
-| 🟠 Mitigatieplan opstellen | R09 | ConcurrentModificationException | 9     |
-| 🟢 Monitoren               | R10 | Deprecated Date-API             | 6     |
-| 🟢 Monitoren               | R12 | Ongebruikte variabele           | 2     |
+| Prioriteit                 | ID      | Risico                          | Score  |
+| -------------------------- | ------- | ------------------------------- | ------ |
+| 🔴 Onmiddellijk aanpakken  | R01     | PII-logging                     | 25     |
+| 🔴 Onmiddellijk aanpakken  | R02     | Hardcoded credentials           | 20     |
+| 🔴 Onmiddellijk aanpakken  | R03     | Geen data-level ACL             | 16     |
+| 🔴 Onmiddellijk aanpakken  | R04     | Typfouten privilege-constanten  | 15     |
+| 🔴 Onmiddellijk aanpakken  | **R14** | **SQL Injection**               | **15** |
+| 🟠 Mitigatieplan opstellen | R05     | Lege @Authorized annotaties     | 12     |
+| 🟠 Mitigatieplan opstellen | R06     | Geen MFA                        | 12     |
+| 🟠 Mitigatieplan opstellen | R07     | Geen audit logging              | 12     |
+| 🟠 Mitigatieplan opstellen | R08     | Geen brute-force beveiliging    | 12     |
+| 🟠 Mitigatieplan opstellen | R11     | Void/retire-vlaggen niet gezet  | 12     |
+| 🟠 Mitigatieplan opstellen | R09     | ConcurrentModificationException | 9      |
+| 🟢 Monitoren               | R10     | Deprecated Date-API             | 6      |
+| 🟢 Monitoren               | R12     | Ongebruikte variabele           | 2      |

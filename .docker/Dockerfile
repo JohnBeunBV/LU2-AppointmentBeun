@@ -12,6 +12,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget git \
     && rm apache-maven-${MAVEN_VERSION}-bin.tar.gz
 
 COPY ./openmrs-module-appointmentscheduling /build/appointmentscheduling
+# Download required dependency modules
+RUN mkdir -p /build/modules \
+    && wget -q "https://addons.openmrs.org/api/v1/addon/org.openmrs.module.webservices-rest/2.5/download" \
+         -O /build/modules/webservices.rest-2.5.omod \
+    && wget -q "https://addons.openmrs.org/api/v1/addon/org.openmrs.module.reporting/0.9.2/download" \
+         -O /build/modules/reporting-0.9.2.omod \
+    && wget -q "https://addons.openmrs.org/api/v1/addon/org.openmrs.module.htmlwidgets/1.6.4/download" \
+         -O /build/modules/htmlwidgets-1.6.4.omod \
+    && wget -q "https://addons.openmrs.org/api/v1/addon/org.openmrs.module.calculation/1.1/download" \
+         -O /build/modules/calculation-1.1.omod \
+    && wget -q "https://addons.openmrs.org/api/v1/addon/org.openmrs.module.serialization-xstream/0.2.7/download" \
+         -O /build/modules/serialization.xstream-0.2.7.omod
+
 RUN cd /build/appointmentscheduling && mvn clean package -DskipTests -q
 
 # Download OpenMRS WAR directly from OpenMRS Nexus repo
@@ -48,6 +61,7 @@ COPY --from=builder /build/openmrs.war /opt/tomcat/webapps/openmrs.war
 RUN mkdir -p /opt/openmrs/modules /opt/openmrs/data /opt/openmrs/logs
 
 # Copy built module (overridden by volume mount in development)
+COPY --from=builder /build/modules/*.omod /opt/openmrs/modules/
 COPY --from=builder /build/appointmentscheduling/omod/target/*.omod /opt/openmrs/modules/
 
 # Set JVM options per environment; docker-compose env vars override at runtime

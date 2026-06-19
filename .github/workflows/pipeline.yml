@@ -279,6 +279,8 @@ jobs:
     needs: docker-build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push' && vars.DEPLOYMENTS_ENABLED == 'true'
+    permissions:
+      contents: read
     environment:
       name: test
       url: ${{ vars.TEST_SERVER_HOST }}
@@ -335,6 +337,8 @@ jobs:
     needs: docker-build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/release/') && github.event_name == 'push' && vars.DEPLOYMENTS_ENABLED == 'true'
+    permissions:
+      contents: read
     environment:
       name: acceptance
       url: ${{ vars.ACC_SERVER_HOST }}
@@ -391,6 +395,8 @@ jobs:
     needs: docker-build
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && vars.DEPLOYMENTS_ENABLED == 'true'
+    permissions:
+      contents: read
     environment:
       name: production
       url: ${{ vars.PROD_SERVER_HOST }}

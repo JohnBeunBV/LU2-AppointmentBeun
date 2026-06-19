@@ -31,16 +31,11 @@
 
 ## Bevindingen
 
-### S1 — Hardcoded credentials (kritiek)
+### S1 — Hardcoded credentials (kritiek) — OPGELOST
 
-**Bestand:** `AppointmentActivator.java` regels 79–82
+**Bestand:** `AppointmentActivator.java` regels 79–82 *(verwijderd)*
 
-```java
-private static final String HL7_EXPORT_PASSWORD = "Appt@Export2021!";
-private static final String HL7_DB_URL = "jdbc:mysql://hl7-reports.hospital.internal:3306/appointments?user=appt_export_svc&password=Appt@Export2021!";
-```
-
-Productiewachtwoord en JDBC-verbindingsstring staan hardcoded in de broncode en zijn daarmee zichtbaar in de git-geschiedenis. **Niet conform S1.**
+De volledige `getHL7ExportUrl()`-methode inclusief hardcoded wachtwoord en JDBC-verbindingsstring is verwijderd uit de broncode. De methode werd nergens aangeroepen (dode code) en vormt een beveiligingsrisico. **Conform S1 na fix.**
 
 ---
 
@@ -130,7 +125,7 @@ Variabele wordt aangemaakt maar nooit gebruikt. **Niet conform M5.**
 
 | Eis                              | Status        |
 | -------------------------------- | ------------- |
-| S1 — Geen hardcoded credentials  | Niet conform  |
+| S1 — Geen hardcoded credentials  | **Opgelost**  |
 | S2 — Geen PII in logs            | Niet conform  |
 | S3 — Toegangscontrole            | Deels conform |
 | M1 — Geen deprecated API         | Niet conform  |

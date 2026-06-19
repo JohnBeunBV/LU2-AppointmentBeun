@@ -22,12 +22,19 @@ De vijf afzonderlijke workflowbestanden zijn samengevoegd tot één enkele workf
 **Opgebouwde job-structuur:**
 
 ```
+pipeline.yml:
 secret-scan
-    └── build-and-test (build, tests, SonarQube, Snyk, SBOM, coverage)
-            └── docker-build
+    └── build-and-test (build, tests, JaCoCo, SonarQube, Snyk, SBOM)
+            └── docker-build (Trivy scan)
                     ├── deploy-test       (alleen develop)
                     ├── deploy-acceptance (alleen release/*)
                     └── deploy-prod       (alleen workflow_dispatch)
+
+codeql.yml (parallel):
+analyze (CodeQL Java SAST — security-extended)
+
+qodana_code_quality.yml (parallel):
+qodana (JetBrains kwaliteitsanalyse)
 ```
 
 **Opgeloste bugs ten opzichte van de oude workflows:**

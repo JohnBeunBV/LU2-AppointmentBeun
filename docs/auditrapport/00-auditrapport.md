@@ -1,4 +1,4 @@
-﻿# Auditrapport — OpenMRS Appointment Scheduler
+﻿# Auditrapport - OpenMRS Appointment Scheduler
 
 **Module:** OpenMRS Appointment Scheduler  
 **Versie:** 1.17.0-SNAPSHOT  
@@ -477,19 +477,19 @@ De module is **niet productierijp** zolang:
 
 | Bijlage | Inhoud                                                                                                        | Bronbestand                                                           |
 | ------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| A       | Gap-analyse — sprint 1 (april 2026) + re-evaluatie sprint 3 (18 juni 2026)                                    | `01-gap-analyse.md`, `13-gap-analyse-logging.md`                      |
+| A       | Gap-analyse — sprint 1 (juni 2026) + re-evaluatie sprint 3 (18 juni 2026)                                     | `01-gap-analyse.md`, `13-gap-analyse-logging.md`                      |
 | B       | Traceability matrix (dit document, §9)                                                                        | Zie sectie 9 hieronder                                                |
 | C       | SBOM (CycloneDX JSON) — gegenereerd per CI-run; eindmeting sprint 3 (juni 2026)                               | `sbom/sbom-{versie}-{datum}.json` (pipeline-artifact, GitHub Actions) |
 | D       | SAST-output — CodeQL security-extended scan (eindmeting PR #22, 19 juni 2026) + SonarQube quality gate export | GitHub Actions artifact "codeql-results" + SonarQube dashboard        |
-| E       | Risicomatrix — sprint 2 (mei 2026) + update sprint 3 (18 juni 2026)                                           | `05-risicomatrix.md`                                                  |
-| F       | Bow-tie diagrammen / threat models — sprint 2/3 (mei–juni 2026)                                               | `06-bowtie.md`, `10-cicd-bowtie.md`, `12-attack-surface.md`           |
+| E       | Risicomatrix — sprint 2 (juni 2026) + update sprint 3 (18 juni 2026)                                          | `05-risicomatrix.md`                                                  |
+| F       | Bow-tie diagrammen / threat models — sprint 2/3 (juni 2026)                                                   | `06-bowtie.md`, `10-cicd-bowtie.md`, `12-attack-surface.md`           |
 | G       | Snyk dependency-scan + Trivy container-scan — pipeline-artifact PR #19 (18 juni 2026)                         | GitHub Actions artifact, pipeline-run 18 juni 2026                    |
 | H       | CRA-mapping                                                                                                   | Zie sectie 8 hieronder                                                |
 | I       | Security backlog / geprioriteerde verbeteraanpak                                                              | `07-security-backlog.md`                                              |
 | J       | Penetration test rapport + PoC's — sprint 3 (juni 2026)                                                       | `14-pentest-rapport.md`                                               |
 | K       | Asset-identificatie                                                                                           | `03-assets.md`                                                        |
 | L       | Risicocriteria                                                                                                | `04-risicocriteria.md`                                                |
-| M       | Bronnen (CVE-referenties, normreferenties, tools)                                                             | Zie onderkant dit document                                            |
+| M       | Bronnen (CVE-referenties, normreferenties, tools)                                                             | Zie onderaan dit document                                             |
 
 ---
 
@@ -516,7 +516,7 @@ De module is **niet productierijp** zolang:
 
 | Norm                                          | Maatregel                                                                       | Vóór (bevinding)                                                                                                                                                                                                                | Aanpassing                                                                                                                                                                                                                                                                                                       | Na (bewijs)                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | --------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| NEN-7510 A.8.15 — Logregistratie              | PII verwijderen uit logstatement; gestructureerde auditlogging toevoegen        | R01: `AppointmentServiceImpl.java` r.1426–1432 logde naam, DOB, patiënt-ID, geslacht (april 2026, `01-gap-analyse.md`)                                                                                                          | Fix in `AppointmentServiceImpl.java`: PII vervangen door `patient.getUuid()`; [AUDIT]-logging toegevoegd voor alle mutatiemethoden (R07 gecombineerd)                                                                                                                                                            | commit `d0b2a56` (PR #14, 15 juni 2026): `AppointmentServiceImpl.java` — `log.info("[AUDIT] appointment.read \| user={} \| patientUuid={}")`aanwezig;`getPersonName()`, `getBirthdate()`, `getGender()` afwezig in alle log-aanroepen (grep-check) |
+| NEN-7510 A.8.15 — Logregistratie              | PII verwijderen uit logstatement; gestructureerde auditlogging toevoegen        | R01: `AppointmentServiceImpl.java` r.1426–1432 logde naam, DOB, patiënt-ID, geslacht (april 2026, `01-gap-analyse.md`)                                                                                                          | Fix in `AppointmentServiceImpl.java`: PII vervangen door `patient.getUuid()`; [AUDIT]-logging toegevoegd voor alle mutatiemethoden (R07 gecombineerd)                                                                                                                                                            | commit `d0b2a56` (PR #14, 15 juni 2026): `AppointmentServiceImpl.java` — `log.info("[AUDIT] appointment.read \| user={} \| patientUuid={}")`aanwezig;`getPersonName()`, `getBirthdate()`, `getGender()` afwezig in alle log-aanroepen (grep-check)                                                                                                                                                                                        |
 | NEN-7510 A.9.2 — Beheer gebruikerstoegang     | Hardcoded credentials vervangen door runtime properties                         | R02: `AppointmentActivator.java` r.79–82 bevatte `Appt@Export2021!` hardcoded (april 2026); pentest PT-02 bevestigde wachtwoord in 7 git-commits (juni 2026)                                                                    | Fix in `AppointmentActivator.java`: constanten verwijderd; waarden via `Context.getRuntimeProperties().getProperty(...)`                                                                                                                                                                                         | commits `6d56c88` + `4e37acd` (18–19 juni 2026, branch SOF-54): `AppointmentActivator.java` — literal `Appt@Export2021!` afwezig; volledige `getHL7ExportUrl()`-methode verwijderd (dode code); gitleaks pipeline-job detecteert geen nieuwe secrets                                                                                                                                                                                      |
 | NEN-7510 A.8.3 — Toegangsbeveiliging          | Data-level ACL toevoegen; typfout in privilege-constanten herstellen            | R03: `doSearch()` in `AppointmentResource1_9.java` — geen eigenaarcheck (april 2026); R04: `AppointmentUtils.java` r.29–31: "Scedules" i.p.v. "Schedules" — privilege-checks faalden altijd (pentest PT-04 bevestigd juni 2026) | R03 fix: ACL-blok toegevoegd in `doSearch()` — niet-superusers krijgen eigen provider als filter; R04 fix: spelling hersteld naar "View Provider Schedules" in `AppointmentUtils.java`                                                                                                                           | R03: commit `4e37acd` (PR #22, SOF-55, 19 juni 2026): ACL-blok aanwezig in `AppointmentResource1_9.java` r.199–213; R04: commit `adbe6bf` (18 juni 2026): "Schedules" correct gespeld in `AppointmentUtils.java` — runtime-foutmelding toont niet langer "Scedules"                                                                                                                                                                       |
 | NEN-7510 A.8.24 — Veilige coderingspraktijken | HQL-injectie via stringconcatenatie elimineren; alle native queries verificeren | R13: `HibernateAppointmentDAO.java` r.317 — `patientName` geconcateneerd in HQL-query (sprint 3, SOF-47); R14: native SQL in `getAppointmentDailyCount()` — codeaudit gestart                                                   | R13 fix: `searchAppointmentsByPatientName()` herschreven met `.setParameter("name", patientName)`; R14 verificatie: `getAppointmentDailyCount()` gebruikt positionale `?` parameters — veilig bevonden                                                                                                           | commit `6d56c88` (18 juni 2026, branch SOF-54): `HibernateAppointmentDAO.java` — `createQuery(hql).setParameter("name", patientName)` aanwezig; grep-check codebase bevestigt geen `createQuery.*+` patroon (geen stringconcatenatie in DAO-laag)                                                                                                                                                                                         |
@@ -531,13 +531,13 @@ De module is **niet productierijp** zolang:
 
 Voor de vastgestelde kwetsbaarheden in de eigen module is het volgende proces gevolgd:
 
-| Stap                                                                                         | Status                   | Datum                                     |
-| -------------------------------------------------------------------------------------------- | ------------------------ | ----------------------------------------- |
-| 1. Kwetsbaarheden gedocumenteerd met beschrijving, bestand, regelnummer, reproduceerbare PoC | ✅ Gedaan                | April–juni 2026 (`14-pentest-rapport.md`) |
-| 2. Contact opgenomen met vendor/CERT                                                         | N.v.t. — eigen module    | —                                         |
-| 3. Hersteltermijn afgesproken                                                                | N.v.t. — intern opgelost | —                                         |
-| 4. Coördinatie via NCSC/CERT-CC                                                              | N.v.t.                   | —                                         |
-| 5. Fixes intern doorgevoerd; bevindingen gedocumenteerd in dit rapport                       | ✅ Gedaan                | Juni 2026                                 |
+| Stap                                                                                         | Status                   | Datum                               |
+| -------------------------------------------------------------------------------------------- | ------------------------ | ----------------------------------- |
+| 1. Kwetsbaarheden gedocumenteerd met beschrijving, bestand, regelnummer, reproduceerbare PoC | ✅ Gedaan                | Juni 2026 (`14-pentest-rapport.md`) |
+| 2. Contact opgenomen met vendor/CERT                                                         | N.v.t. — eigen module    | —                                   |
+| 3. Hersteltermijn afgesproken                                                                | N.v.t. — intern opgelost | —                                   |
+| 4. Coördinatie via NCSC/CERT-CC                                                              | N.v.t.                   | —                                   |
+| 5. Fixes intern doorgevoerd; bevindingen gedocumenteerd in dit rapport                       | ✅ Gedaan                | Juni 2026                           |
 
 **Relevante normen:** NEN-7510 A.6.8 (rapportage van informatiebeveiligingsgebeurtenissen), CRA Art. 14 (meldplicht ENISA binnen 24 uur bij actief misbruik van kritieke kwetsbaarheid).
 
@@ -545,36 +545,54 @@ Voor de vastgestelde kwetsbaarheden in de eigen module is het volgende proces ge
 
 ## 11. Verantwoording AI-tooling
 
-> **Verplicht onderdeel.** Doel: aantonen dat _jij_ de security-beslissingen hebt genomen, niet de AI.
+> **Verplicht onderdeel.** Doel: aantonen dat _wij_ de security-beslissingen hebben genomen, niet de AI.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ AI-TOOLING VERANTWOORDING                                         │
-│                                                                   │
-│ Gebruikte tools: [vul in: bijv. Claude Code, GitHub Copilot]      │
-│                                                                   │
-│ Wat ik aan AI heb gevraagd:                                        │
-│ • [bijv. uitleg van HQL-injectiepatronen]                          │
-│ • [bijv. genereren van template voor bevindingen-format]           │
-│ • [bijv. suggesties voor NEN-7510 control-nummers]                 │
-│                                                                   │
-│ Wat de AI heeft gegenereerd:                                        │
-│ • [bijv. opzet van de traceability matrix structuur]               │
-│ • [bijv. voorbeeldcode voor parameterisatie-fix]                   │
-│                                                                   │
-│ Wat ik zelf heb gecontroleerd:                                     │
-│ • [bijv. alle CVSS-scores zelf berekend via FIRST-calculator]      │
-│ • [bijv. bevindingen geverifieerd in de broncode]                  │
-│ • [bijv. dynamische validatie op draaiende Docker-omgeving]        │
-│ • [bijv. NEN-7510 controls geverifieerd in de norm zelf]           │
-│                                                                   │
-│ Beslissingen die ik zelf heb gemaakt:                              │
-│ • [bijv. RAG-status bepalen op basis van bevindingen]              │
-│ • [bijv. bevindingen prioriteren (P1/P2/P3)]                       │
-│ • [bijv. PT-08 accepteren als restrisico met onderbouwing]         │
-│ • [bijv. scope-afbakening: welke bevindingen buiten scope vallen]  │
-└─────────────────────────────────────────────────────────────────┘
-```
+### Gebruikte tools
+
+- **Claude Code** (Anthropic, model: Claude Sonnet 4.6) — ingezet als gesprekspartner en documentatieassistent via de VSCode-extensie
+- **GitHub Copilot** (Microsoft/OpenAI) — ingezet voor geautomatiseerde code reviews bij pull requests
+
+### Wat wij aan de AI hebben gevraagd
+
+**Claude Code:**
+
+- Uitleg van de codebasestructuur: hoe `AppointmentService`, `AppointmentServiceImpl` en de Hibernate-DAO-laag samenhangen
+- Toelichting op specifieke Qodana-bevindingscategorieën (bijv. `SizeReplaceableByIsEmpty`, `UnusedAssignment`, `SimplifiableConditionalExpression`) en wat ze in de praktijk betekenen
+- Uitleg van de AVG-implicaties van PII-logging en wat "pseudoniem" versus "anoniem" inhoudt
+- Hulp bij het structureren van documentatiesecties (traceability matrix, wijzigingslog, bevindingen-backlog)
+- Controleren of een Nederlandse zin grammaticaal correct was
+- Nakijken of workshopslides een bepaalde opleveringseis bevatten
+
+**GitHub Copilot:**
+
+- Automatische code review-opmerkingen bij pull requests (stijl, potentiële bugs, suggesties voor vereenvoudiging)
+
+### Wat de AI heeft gegenereerd
+
+- Suggesties voor de opbouw en kolommen van de traceability matrix
+- Een technische fix voor een Markdown-opmaakprobleem in de tabel (ontsnappen van `|`-tekens via PowerShell)
+- Invulling van testresultaten in het verbeteronderzoek op basis van CI-uitvoer die **wij** uit de GitHub Actions pipeline hebben gekopieerd
+- Conceptteksten voor wijzigingslogitems die wij vervolgens hebben doorgelezen en aangepast
+- GitHub Copilot: reviewopmerkingen per gewijzigd bestand in pull requests, automatisch gegenereerd op basis van de diff
+
+### Wat wij zelf hebben gecontroleerd
+
+- Alle bevindingen (R01–R14, CICD-04/05/06) zijn door ons zelf gevonden door de broncode te lezen, CodeQL-alerts door te nemen en de GitHub Actions pipeline te analyseren
+- NEN-7510:2024 control-nummers zijn geverifieerd in de norm zelf; wij hebben bepaald welke controls van toepassing zijn op elke bevinding
+- De fix voor PII-logging is door ons geschreven en handmatig gecontroleerd in `AppointmentServiceImpl.java`; wij hebben gecontroleerd dat de UUID pseudoniem is en geen directe persoonsgegevens lekt
+- De CI-uitvoer (testresultaten, JaCoCo coverage) hebben wij zelf uit GitHub Actions gehaald en beoordeeld voordat die in het verbeteronderzoek is opgenomen
+- Alle door AI voorgestelde conceptteksten zijn door ons doorgelezen, gecorrigeerd waar nodig, en pas opgenomen na eigen beoordeling
+- Copilot-reviewopmerkingen zijn door ons per stuk beoordeeld: sommige zijn overgenomen, andere bewust genegeerd wanneer ze niet van toepassing waren op de OpenMRS-context
+
+### Beslissingen die wij zelf hebben gemaakt
+
+- RAG-status van het auditrapport bepaald (Oranje) op basis van onze eigen risicoafweging
+- Prioritering van bevindingen (P1/P2/P3) vastgesteld op basis van CVSS-score, exploiteerbaarheid en impact op patiëntdata
+- Besluit om vendor-JavaScript (jQuery, FullCalendar, DataTables) buiten scope te plaatsen, met expliciete onderbouwing
+- Besluit om PT-08 (Tomcat versie-openbaarmaking) als laag restrisico te accepteren
+- Selectie van Qodana-bevindingen die wél en níet worden opgelost in dit project, op basis van ernst en effort
+- Formulering en onderbouwing van het responsible-disclosure-beleid
+- Beoordeling of gevonden bevindingen CRA-meldplichtig zijn (conclusie: nee, geen actief misbruik vastgesteld)
 
 ---
 

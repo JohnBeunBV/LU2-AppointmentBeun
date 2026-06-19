@@ -996,7 +996,7 @@ public interface AppointmentService extends OpenmrsService {
 	 * @param appointment
 	 * @return
 	 */
-	@Authorized()
+	@Authorized(AppointmentUtils.PRIV_VIEW_APPOINTMENTS)
 	AppointmentStatusHistory getMostRecentAppointmentStatusHistory(Appointment appointment);
 	/**
 	 * returns list of early appointments
@@ -1031,7 +1031,7 @@ public interface AppointmentService extends OpenmrsService {
 	 * @return a list of provider schedule objects.
 	 * <strong>Should</strong> get all provider schedule
 	 */
-	@Authorized()
+	@Authorized(AppointmentUtils.PRIV_VIEW_PROVIDER_SCHEDULES)
 	List<ProviderSchedule> getAllProviderSchedules();
 
 	/**
@@ -1061,7 +1061,7 @@ public interface AppointmentService extends OpenmrsService {
 	 * @return the provider schedule object found with the given uuid, else null.
 	 * <strong>Should</strong> get correct provider schedule
 	 */
-	@Authorized()
+	@Authorized(AppointmentUtils.PRIV_VIEW_PROVIDER_SCHEDULES)
 	ProviderSchedule getProviderScheduleByUuid(String uuid);
 
 	/**

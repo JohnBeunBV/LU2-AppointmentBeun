@@ -1,7 +1,8 @@
 # Verbeteronderzoek Onderhoudbaarheid
+
 **Module:** OpenMRS Appointment Scheduler  
 **Norm:** NEN-7510:2024  
-**Sprint:** LU2
+**Sprint:** 4
 
 ---
 
@@ -13,15 +14,15 @@
 
 De volgende non-functional requirements zijn vastgesteld op basis van de NEN-7510:2024 norm en IEC 62304 klasse B (medische software zonder direct letselrisico). Per eis is de tooling geconfigureerd die dit automatisch meet en het CI-proces laat falen bij niet-voldoen.
 
-| NFR | Meetbare grens | Tooling | Workflow | CI-gedrag bij niet-voldoen |
-|-----|---------------|---------|----------|---------------------------|
-| Instruction coverage ≥ 70% (`api`-module) | COVEREDRATIO ≥ 0.70 | JaCoCo 0.8.11 | `pipeline.yml` | `mvn verify` faalt; build stopt |
-| Geen beveiligingskwetsbaarheden in broncode (SAST) | 0 high/critical findings | CodeQL (`security-extended`) | `codeql.yml` | Resultaten zichtbaar in GitHub Security tab; blokkeert bij branch protection |
-| Geen kritieke code smells of bugs | SonarQube quality gate PASSED | SonarCloud | `pipeline.yml` | Merge naar `main`/`release/*` geblokkeerd |
-| Codekwaliteit voldoet aan JetBrains-normen | Qodana quality gate PASSED | Qodana (JetBrains) | `qodana_code_quality.yml` | PR-check faalt bij kwaliteitsgate mislukking |
-| Geen dependency-kwetsbaarheden (CVSS ≥ 7) | 0 high/critical CVE's | Snyk | `pipeline.yml` | Pipeline faalt bij `snyk test` |
-| Geen container-kwetsbaarheden (CRITICAL/HIGH) | 0 CRITICAL/HIGH CVE's in image | Trivy | `pipeline.yml` | Pipeline faalt na docker build |
-| Geen secrets in broncode | 0 gevonden secrets | Gitleaks | `pipeline.yml` | Eerste job in pipeline; blokkeert alles |
+| NFR                                                | Meetbare grens                 | Tooling                      | Workflow                  | CI-gedrag bij niet-voldoen                                                   |
+| -------------------------------------------------- | ------------------------------ | ---------------------------- | ------------------------- | ---------------------------------------------------------------------------- |
+| Instruction coverage ≥ 70% (`api`-module)          | COVEREDRATIO ≥ 0.70            | JaCoCo 0.8.11                | `pipeline.yml`            | `mvn verify` faalt; build stopt                                              |
+| Geen beveiligingskwetsbaarheden in broncode (SAST) | 0 high/critical findings       | CodeQL (`security-extended`) | `codeql.yml`              | Resultaten zichtbaar in GitHub Security tab; blokkeert bij branch protection |
+| Geen kritieke code smells of bugs                  | SonarQube quality gate PASSED  | SonarCloud                   | `pipeline.yml`            | Merge naar `main`/`release/*` geblokkeerd                                    |
+| Codekwaliteit voldoet aan JetBrains-normen         | Qodana quality gate PASSED     | Qodana (JetBrains)           | `qodana_code_quality.yml` | PR-check faalt bij kwaliteitsgate mislukking                                 |
+| Geen dependency-kwetsbaarheden (CVSS ≥ 7)          | 0 high/critical CVE's          | Snyk                         | `pipeline.yml`            | Pipeline faalt bij `snyk test`                                               |
+| Geen container-kwetsbaarheden (CRITICAL/HIGH)      | 0 CRITICAL/HIGH CVE's in image | Trivy                        | `pipeline.yml`            | Pipeline faalt na docker build                                               |
+| Geen secrets in broncode                           | 0 gevonden secrets             | Gitleaks                     | `pipeline.yml`            | Eerste job in pipeline; blokkeert alles                                      |
 
 Deze tooling is geconfigureerd in `.github/workflows/pipeline.yml`, `.github/workflows/codeql.yml`, `.github/workflows/qodana_code_quality.yml` en `openmrs-module-appointmentscheduling/pom.xml`. De JaCoCo-drempel is gekozen op basis van IEC 62304 klasse B (≥ 75% aanbevolen) en pragmatisch verlaagd naar 70% als harde minimumgrens, met 80% als streefdoel — zie [02-coverage-onderbouwing.md](02-coverage-onderbouwing.md) voor de volledige onderbouwing.
 
@@ -29,18 +30,19 @@ Deze tooling is geconfigureerd in `.github/workflows/pipeline.yml`, `.github/wor
 
 ### 1.2 Kwaliteitseisen
 
-| # | Eis | Norm |
-|---|-----|------|
-| M1 | Geen gebruik van deprecated API's | Java-methoden als `Date.getYear()` zijn deprecated sinds Java 1.1 |
-| M2 | Methoden doen wat ze beloven | `retireAppointmentType`, `voidAppointment` moeten de bijbehorende vlag zetten vóór opslag |
-| M3 | Geen typfouten in constantenamen | Privilege-constanten in `AppointmentUtils` moeten exact overeenkomen met de databasewaarden |
-| M4 | Correcte iteratie over collecties | Verwijderen tijdens iteratie mag alleen via `Iterator.remove()` |
-| M5 | Geen ongebruikte variabelen | Aangemaakt maar nooit gebruikte variabelen moeten worden verwijderd |
-| M6 | Code coverage | Minimale instruction coverage van 70% (streven: 80%) — IEC 62304 klasse B vereist ≥ 75% |
+| #   | Eis                               | Norm                                                                                        |
+| --- | --------------------------------- | ------------------------------------------------------------------------------------------- |
+| M1  | Geen gebruik van deprecated API's | Java-methoden als `Date.getYear()` zijn deprecated sinds Java 1.1                           |
+| M2  | Methoden doen wat ze beloven      | `retireAppointmentType`, `voidAppointment` moeten de bijbehorende vlag zetten vóór opslag   |
+| M3  | Geen typfouten in constantenamen  | Privilege-constanten in `AppointmentUtils` moeten exact overeenkomen met de databasewaarden |
+| M4  | Correcte iteratie over collecties | Verwijderen tijdens iteratie mag alleen via `Iterator.remove()`                             |
+| M5  | Geen ongebruikte variabelen       | Aangemaakt maar nooit gebruikte variabelen moeten worden verwijderd                         |
+| M6  | Code coverage                     | Minimale instruction coverage van 70% (streven: 80%) — IEC 62304 klasse B vereist ≥ 75%     |
 
 ### Bevindingen
 
-#### M1 — Deprecated Date-API
+#### M1 - Deprecated Date-API
+
 **Bestand:** `AppointmentServiceImpl.java` regels 1306–1311
 
 ```java
@@ -54,7 +56,8 @@ return new Date(
 
 ---
 
-#### M2 — Methoden zetten vlag niet
+#### M2 - Methoden zetten vlag niet
+
 **Bestand:** `AppointmentServiceImpl.java`
 
 - `retireAppointmentType()` roept enkel `saveAppointmentType()` aan zonder `setRetired(true)` of `setRetireReason()` te zetten.
@@ -64,7 +67,8 @@ return new Date(
 
 ---
 
-#### M3 — Typfouten in privilege-constanten
+#### M3 - Typfouten in privilege-constanten
+
 **Bestand:** `AppointmentUtils.java` regels 29–31
 
 ```java
@@ -76,14 +80,16 @@ public static final String PRIV_MANAGE_PROVIDER_SCHEDULES = "Manage Provider Sce
 
 ---
 
-#### M4 — ConcurrentModificationException risico
+#### M4 - ConcurrentModificationException risico
+
 **Bestand:** `AppointmentServiceImpl.java` regels 961–988 (`cleanOpenAppointments`)
 
 De methode itereert via een `Iterator` maar verwijdert elementen via `appointmentsInStates.remove(appointment)`, wat een `ConcurrentModificationException` veroorzaakt. **Niet conform M4.**
 
 ---
 
-#### M5 — Ongebruikte variabele
+#### M5 - Ongebruikte variabele
+
 **Bestand:** `AppointmentServiceImpl.java` regel 813
 
 ```java
@@ -94,11 +100,12 @@ Variabele wordt aangemaakt maar nooit gebruikt. **Niet conform M5.**
 
 ---
 
-#### M6 — Code Coverage (meting vóór verbeteringen)
+#### M6 - Code Coverage (meting vóór verbeteringen)
+
 | Module | Coverage vóór |
-|--------|--------------|
-| `api`  | 70%          |
-| `omod` | 32%          |
+| ------ | ------------- |
+| `api`  | 70%           |
+| `omod` | 32%           |
 
 Gemeten via JaCoCo op instruction-niveau. De `api`-module zat precies op de minimumdrempel; elke regressie zou de build doen falen.
 
@@ -106,14 +113,14 @@ Gemeten via JaCoCo op instruction-niveau. De `api`-module zat precies op de mini
 
 ### Samenvatting analyse
 
-| Eis | Status vóór verbetering |
-|-----|------------------------|
-| M1 — Geen deprecated API | Niet conform |
-| M2 — Methoden correct | Niet conform |
-| M3 — Constanten correct | Niet conform |
-| M4 — Veilige iteratie | Niet conform |
-| M5 — Geen ongebruikte variabelen | Niet conform |
-| M6 — Code coverage ≥ 70% | Net conform (grenswaarde) |
+| Eis                              | Status vóór verbetering   |
+| -------------------------------- | ------------------------- |
+| M1 — Geen deprecated API         | Niet conform              |
+| M2 — Methoden correct            | Niet conform              |
+| M3 — Constanten correct          | Niet conform              |
+| M4 — Veilige iteratie            | Niet conform              |
+| M5 — Geen ongebruikte variabelen | Niet conform              |
+| M6 — Code coverage ≥ 70%         | Net conform (grenswaarde) |
 
 ---
 
@@ -123,11 +130,11 @@ Gemeten via JaCoCo op instruction-niveau. De `api`-module zat precies op de mini
 
 Er zijn twee testtypen ingezet:
 
-| Testtype | Klasse | Doel |
-|----------|--------|------|
-| Unit test | `AppointmentValidatorTest` | Valideert invoervalidatie zonder database of OpenMRS-context |
+| Testtype       | Klasse                           | Doel                                                                     |
+| -------------- | -------------------------------- | ------------------------------------------------------------------------ |
+| Unit test      | `AppointmentValidatorTest`       | Valideert invoervalidatie zonder database of OpenMRS-context             |
 | Integratietest | `AppointmentServiceSecurityTest` | Test security-kritieke methoden met echte H2-database en OpenMRS-context |
-| Integratietest | `AppointmentResource1_9Test` | Test ACL-logica in de REST resource (enforceProviderAcl) |
+| Integratietest | `AppointmentResource1_9Test`     | Test ACL-logica in de REST resource (enforceProviderAcl)                 |
 
 ---
 
@@ -136,16 +143,16 @@ Er zijn twee testtypen ingezet:
 **Bestand:** `api/src/test/java/.../validator/AppointmentValidatorTest.java`  
 **Type:** Pure unit test — geen database, geen Spring context.
 
-| Testmethode | Scenario | Verwacht resultaat |
-|-------------|----------|--------------------|
-| `supports_shouldSupportAppointmentClass` | `supports(Appointment.class)` | `true` |
-| `supports_shouldNotSupportArbitraryClass` | `supports(Object.class)` | `false` |
-| `validate_nullAppointment_shouldRejectWithGeneralError` | `validate(null, errors)` | Error code `error.general` |
-| `validate_appointmentWithNullTimeSlot_shouldRejectTimeSlotField` | Afspraak zonder tijdslot | FieldError op `timeSlot` |
-| `validate_appointmentWithNullPatient_shouldRejectPatientField` | Afspraak zonder patiënt | FieldError op `patient` |
-| `validate_appointmentWithNullType_shouldRejectAppointmentTypeField` | Afspraak zonder type | FieldError op `appointmentType` |
-| `validate_appointmentTypeNotSupportedByBlock_shouldRejectWithNotSupportedTypeCode` | Type staat niet in het blok | Error code `notSupportedType` |
-| `validate_fullyValidAppointment_shouldProduceNoErrors` | Volledig geldige afspraak | Geen errors |
+| Testmethode                                                                        | Scenario                      | Verwacht resultaat              |
+| ---------------------------------------------------------------------------------- | ----------------------------- | ------------------------------- |
+| `supports_shouldSupportAppointmentClass`                                           | `supports(Appointment.class)` | `true`                          |
+| `supports_shouldNotSupportArbitraryClass`                                          | `supports(Object.class)`      | `false`                         |
+| `validate_nullAppointment_shouldRejectWithGeneralError`                            | `validate(null, errors)`      | Error code `error.general`      |
+| `validate_appointmentWithNullTimeSlot_shouldRejectTimeSlotField`                   | Afspraak zonder tijdslot      | FieldError op `timeSlot`        |
+| `validate_appointmentWithNullPatient_shouldRejectPatientField`                     | Afspraak zonder patiënt       | FieldError op `patient`         |
+| `validate_appointmentWithNullType_shouldRejectAppointmentTypeField`                | Afspraak zonder type          | FieldError op `appointmentType` |
+| `validate_appointmentTypeNotSupportedByBlock_shouldRejectWithNotSupportedTypeCode` | Type staat niet in het blok   | Error code `notSupportedType`   |
+| `validate_fullyValidAppointment_shouldProduceNoErrors`                             | Volledig geldige afspraak     | Geen errors                     |
 
 ---
 
@@ -156,26 +163,26 @@ Er zijn twee testtypen ingezet:
 
 #### PII-logging vulnerability
 
-| Testmethode | Scenario | Doel |
-|-------------|----------|------|
+| Testmethode                                                                             | Scenario  | Doel                                                          |
+| --------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------- |
 | `getAppointmentsForPatientWithLogging_shouldReturnSameResultAsGetAppointmentsOfPatient` | Patiënt 1 | Documenteert vulnerability; bewaakt returnwaarde op regressie |
-| `getAppointmentsForPatientWithLogging_shouldNotReturnNullForKnownPatient` | Patiënt 2 | Null-check op resultaat |
+| `getAppointmentsForPatientWithLogging_shouldNotReturnNullForKnownPatient`               | Patiënt 2 | Null-check op resultaat                                       |
 
 #### bookAppointment guards
 
-| Testmethode | Scenario | Verwacht resultaat |
-|-------------|----------|--------------------|
-| `bookAppointment_onAlreadyPersistedAppointment_shouldThrowAPIException` | Afspraak met bestaand id | `APIException` |
-| `bookAppointment_whenSlotFullAndOverbookFalse_shouldThrowTimeSlotFullException` | Slot vol, overbook=false | `TimeSlotFullException` |
-| `bookAppointment_whenSlotFullAndOverbookTrue_shouldSucceed` | Slot vol, overbook=true | Boeking geslaagd |
-| `bookAppointment_withNullStatus_shouldDefaultToScheduled` | Nieuwe afspraak zonder status | Status = `SCHEDULED` |
+| Testmethode                                                                     | Scenario                      | Verwacht resultaat      |
+| ------------------------------------------------------------------------------- | ----------------------------- | ----------------------- |
+| `bookAppointment_onAlreadyPersistedAppointment_shouldThrowAPIException`         | Afspraak met bestaand id      | `APIException`          |
+| `bookAppointment_whenSlotFullAndOverbookFalse_shouldThrowTimeSlotFullException` | Slot vol, overbook=false      | `TimeSlotFullException` |
+| `bookAppointment_whenSlotFullAndOverbookTrue_shouldSucceed`                     | Slot vol, overbook=true       | Boeking geslaagd        |
+| `bookAppointment_withNullStatus_shouldDefaultToScheduled`                       | Nieuwe afspraak zonder status | Status = `SCHEDULED`    |
 
 #### changeAppointmentStatus
 
-| Testmethode | Scenario | Verwacht resultaat |
-|-------------|----------|--------------------|
+| Testmethode                                                       | Scenario              | Verwacht resultaat                  |
+| ----------------------------------------------------------------- | --------------------- | ----------------------------------- |
 | `changeAppointmentStatus_shouldUpdateStatusAndCreateHistoryEntry` | SCHEDULED → COMPLETED | Status bijgewerkt, history aanwezig |
-| `changeAppointmentStatus_withNullAppointment_shouldNotThrow` | null meegeven | Geen NPE |
+| `changeAppointmentStatus_withNullAppointment_shouldNotThrow`      | null meegeven         | Geen NPE                            |
 
 ---
 
@@ -184,12 +191,12 @@ Er zijn twee testtypen ingezet:
 **Bestand:** `omod/src/test/java/.../rest/resource/openmrs1_9/AppointmentResource1_9Test.java`  
 **Type:** Integratietest — same-package toegang tot package-private methode `enforceProviderAcl`.
 
-| Testmethode | Scenario | Verwacht resultaat |
-|-------------|----------|--------------------|
-| `enforceProviderAcl_superuserReturnsRequestedProvider` | Admin (superuser) vraagt willekeurige provider | Gevraagde provider teruggegeven |
-| `enforceProviderAcl_nonSuperuserWithProviderReturnsOwnProvider` | Niet-superuser is gekoppeld aan provider | Eigen provider teruggegeven |
-| `enforceProviderAcl_nonSuperuserRequestingOtherProviderThrows` | Niet-superuser vraagt andere provider | `APIAuthenticationException` |
-| `enforceProviderAcl_nonSuperuserWithNoProviderThrows` | Niet-superuser niet gekoppeld aan actieve provider | `APIAuthenticationException` |
+| Testmethode                                                     | Scenario                                           | Verwacht resultaat              |
+| --------------------------------------------------------------- | -------------------------------------------------- | ------------------------------- |
+| `enforceProviderAcl_superuserReturnsRequestedProvider`          | Admin (superuser) vraagt willekeurige provider     | Gevraagde provider teruggegeven |
+| `enforceProviderAcl_nonSuperuserWithProviderReturnsOwnProvider` | Niet-superuser is gekoppeld aan provider           | Eigen provider teruggegeven     |
+| `enforceProviderAcl_nonSuperuserRequestingOtherProviderThrows`  | Niet-superuser vraagt andere provider              | `APIAuthenticationException`    |
+| `enforceProviderAcl_nonSuperuserWithNoProviderThrows`           | Niet-superuser niet gekoppeld aan actieve provider | `APIAuthenticationException`    |
 
 ---
 
@@ -200,19 +207,19 @@ Er zijn twee testtypen ingezet:
 
 ---
 
-## 3. Verbeteringen — Prioritering en Onderbouwing
+## 3. Verbeteringen - Prioritering en Onderbouwing
 
 De volgende verbeteringen zijn geselecteerd op basis van de analyse in sectie 1, geprioriteerd op **impact** (ernst van het risico) en **effort** (implementatie-inspanning).
 
-| Prioriteit | Bevinding | Impact | Effort | Onderbouwing |
-|-----------|-----------|--------|--------|--------------|
-| 1 | **R03 — Data-level ACL** (toegangscontrole REST API) | Hoog — providers zien elkaars afspraken | Medium | Directe overtreding van NEN-7510 toegangscontrole; uitgebuite kwetsbaarheid geeft datalekrisico |
-| 2 | **M6 — Code coverage** (JaCoCo gate toevoegen) | Hoog — regressies worden niet gedetecteerd | Laag | Coverage was 70% zonder gate; elke onbedekte regressie gaat onopgemerkt naar productie |
-| 3 | **M5 — Ongebruikte variabele** (`satisfyingConstraints`) | Laag — geen runtime impact | Laag | SonarQube code smell; verlaagt leesbaarheid; eenvoudig te verwijderen |
-| 4 | **M1 — Deprecated Date-API** | Medium — breekt mogelijk op toekomstige JVM | Medium | Deprecated sinds Java 1.1; risicovolle technische schuld voor toekomstige upgrades |
-| 5 | **M2 — Methoden zetten vlag niet** | Hoog — retire/void werkt niet correct | Hoog | Fundamentele logicafout; vergt uitgebreide regressietests |
-| 6 | **M3 — Typfouten privilege-constanten** | Hoog — privilege-checks falen stil | Laag | Makkelijk te fixen maar grote impact; risico op rechtenescalatie |
-| 7 | **M4 — ConcurrentModificationException** | Medium — runtime crash in `cleanOpenAppointments` | Laag | Latente fout; treedt op bij gelijktijdige taken |
+| Prioriteit | Bevinding                                                | Impact                                            | Effort | Onderbouwing                                                                                    |
+| ---------- | -------------------------------------------------------- | ------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------- |
+| 1          | **R03 — Data-level ACL** (toegangscontrole REST API)     | Hoog - providers zien elkaars afspraken           | Medium | Directe overtreding van NEN-7510 toegangscontrole; uitgebuite kwetsbaarheid geeft datalekrisico |
+| 2          | **M6 — Code coverage** (JaCoCo gate toevoegen)           | Hoog - regressies worden niet gedetecteerd        | Laag   | Coverage was 70% zonder gate; elke onbedekte regressie gaat onopgemerkt naar productie          |
+| 3          | **M5 — Ongebruikte variabele** (`satisfyingConstraints`) | Laag - geen runtime impact                        | Laag   | SonarQube code smell; verlaagt leesbaarheid; eenvoudig te verwijderen                           |
+| 4          | **M1 — Deprecated Date-API**                             | Medium - breekt mogelijk op toekomstige JVM       | Medium | Deprecated sinds Java 1.1; risicovolle technische schuld voor toekomstige upgrades              |
+| 5          | **M2 — Methoden zetten vlag niet**                       | Hoog - retire/void werkt niet correct             | Hoog   | Fundamentele logicafout; vergt uitgebreide regressietests                                       |
+| 6          | **M3 — Typfouten privilege-constanten**                  | Hoog - privilege-checks falen stil                | Laag   | Makkelijk te fixen maar grote impact; risico op rechtenescalatie                                |
+| 7          | **M4 — ConcurrentModificationException**                 | Medium - runtime crash in `cleanOpenAppointments` | Laag   | Latente fout; treedt op bij gelijktijdige taken                                                 |
 
 **Gerealiseerde verbeteringen in deze sprint:** prioriteit 1 (R03 ACL) en prioriteit 2 (coverage gate). De overige bevindingen zijn gedocumenteerd in de security backlog voor opvolging.
 
@@ -242,6 +249,7 @@ doSearch()
 Dit zou de beveiliging dichter bij de data plaatsen (defence in depth). Nadeel: `AppointmentServiceImpl` heeft geen directe toegang tot de HTTP-context en de huidige `@Authorized`-annotaties werken op privilege-niveau, niet op data-niveau. Gekozen voor de resource-laag omdat daar de gebruikersidentiteit beschikbaar is via `Context.getAuthenticatedUser()`.
 
 **Toegepaste principes:**
+
 - **Extract Method** (Fowler) — testbaar maken van inline logica
 - **Fail Fast** — exception direct bij onbevoegde toegang, vóór database-aanroep
 - **Least Privilege** — niet-superusers zien alleen hun eigen provider
@@ -268,15 +276,15 @@ Een gate faalt de build actief bij onderschrijding; pure rapportage doet dat nie
 
 ### Gerealiseerde wijzigingen
 
-| Bestand | Wijziging |
-|---------|-----------|
-| `AppointmentResource1_9.java` | `enforceProviderAcl()` methode toegevoegd; aangeroepen vanuit `doSearch()` |
-| `AppointmentResource1_9Test.java` | 4 nieuwe tests voor alle branches van `enforceProviderAcl` |
-| `AppointmentServiceSecurityTest.java` | 8 nieuwe integratietests voor security-kritieke servicemethoden |
-| `AppointmentValidatorTest.java` | 8 nieuwe unit tests voor `AppointmentValidator` |
-| `pom.xml` (parent) | JaCoCo 0.8.11 toegevoegd met 70% instruction coverage gate |
-| `omod/pom.xml` | JaCoCo check uitgeschakeld voor omod-module |
-| `.github/workflows/pipeline.yml` | Coverage rapport als CI-artifact; Sonar/Snyk/Trivy/Gitleaks integratie |
+| Bestand                               | Wijziging                                                                  |
+| ------------------------------------- | -------------------------------------------------------------------------- |
+| `AppointmentResource1_9.java`         | `enforceProviderAcl()` methode toegevoegd; aangeroepen vanuit `doSearch()` |
+| `AppointmentResource1_9Test.java`     | 4 nieuwe tests voor alle branches van `enforceProviderAcl`                 |
+| `AppointmentServiceSecurityTest.java` | 8 nieuwe integratietests voor security-kritieke servicemethoden            |
+| `AppointmentValidatorTest.java`       | 8 nieuwe unit tests voor `AppointmentValidator`                            |
+| `pom.xml` (parent)                    | JaCoCo 0.8.11 toegevoegd met 70% instruction coverage gate                 |
+| `omod/pom.xml`                        | JaCoCo check uitgeschakeld voor omod-module                                |
+| `.github/workflows/pipeline.yml`      | Coverage rapport als CI-artifact; Sonar/Qodana/Snyk/Gitleaks integratie    |
 
 ### AI-tooling verantwoording
 
@@ -296,9 +304,9 @@ De AI-assistent gaf initieel testopzetten die uitgingen van `Context.logout()` /
 
 ### Coverage voor vs. na
 
-| Module | Voor | Na |
-|--------|------|----|
-| `api`  | 70%  | ~73–75% (verwacht na nieuwe tests) |
+| Module | Voor | Na                                            |
+| ------ | ---- | --------------------------------------------- |
+| `api`  | 70%  | ~73–75% (verwacht na nieuwe tests)            |
 | `omod` | 32%  | 32% (gate uitgeschakeld; rapport beschikbaar) |
 
 > **TODO:** Vervang bovenstaande schatting door de werkelijke cijfers uit het JaCoCo-rapport (downloadbaar als CI-artifact na een succesvolle run).
@@ -309,13 +317,13 @@ De AI-assistent gaf initieel testopzetten die uitgingen van `Context.logout()` /
 
 De bestaande testsuite bevat tests die de kernfunctionaliteit afdekken. Na de wijzigingen zijn alle bestaande tests opnieuw uitgevoerd:
 
-| Testsuite | Resultaat |
-|-----------|-----------|
-| `AppointmentServiceTest` | > **TODO: resultaat invoegen** |
+| Testsuite                              | Resultaat                      |
+| -------------------------------------- | ------------------------------ |
+| `AppointmentServiceTest`               | > **TODO: resultaat invoegen** |
 | `AppointmentResource1_9ControllerTest` | > **TODO: resultaat invoegen** |
-| `AppointmentResource1_9Test` | > **TODO: resultaat invoegen** |
-| `AppointmentServiceSecurityTest` | > **TODO: resultaat invoegen** |
-| `AppointmentValidatorTest` | > **TODO: resultaat invoegen** |
+| `AppointmentResource1_9Test`           | > **TODO: resultaat invoegen** |
+| `AppointmentServiceSecurityTest`       | > **TODO: resultaat invoegen** |
+| `AppointmentValidatorTest`             | > **TODO: resultaat invoegen** |
 
 > **TODO:** Voeg hier een screenshot van de CI-run toe (GitHub Actions → build-and-test → test output) als reproduceerbaar bewijs.
 
@@ -325,9 +333,9 @@ De bestaande testsuite bevat tests die de kernfunctionaliteit afdekken. Na de wi
 
 De ACL-logica dekt de volgende scenario's aantoonbaar via tests:
 
-| Scenario | Test | Bewijs |
-|----------|------|--------|
-| Superuser mag alle providers zien | `enforceProviderAcl_superuserReturnsRequestedProvider` | Assert: returned provider == requested provider |
-| Niet-superuser ziet alleen eigen provider | `enforceProviderAcl_nonSuperuserWithProviderReturnsOwnProvider` | Assert: UUID eigen provider |
-| Niet-superuser mag andere provider niet zien | `enforceProviderAcl_nonSuperuserRequestingOtherProviderThrows` | `APIAuthenticationException` verwacht |
-| Gebruiker zonder provider-koppeling geblokkeerd | `enforceProviderAcl_nonSuperuserWithNoProviderThrows` | `APIAuthenticationException` verwacht |
+| Scenario                                        | Test                                                            | Bewijs                                          |
+| ----------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------- |
+| Superuser mag alle providers zien               | `enforceProviderAcl_superuserReturnsRequestedProvider`          | Assert: returned provider == requested provider |
+| Niet-superuser ziet alleen eigen provider       | `enforceProviderAcl_nonSuperuserWithProviderReturnsOwnProvider` | Assert: UUID eigen provider                     |
+| Niet-superuser mag andere provider niet zien    | `enforceProviderAcl_nonSuperuserRequestingOtherProviderThrows`  | `APIAuthenticationException` verwacht           |
+| Gebruiker zonder provider-koppeling geblokkeerd | `enforceProviderAcl_nonSuperuserWithNoProviderThrows`           | `APIAuthenticationException` verwacht           |

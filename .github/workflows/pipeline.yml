@@ -59,7 +59,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up JDK 17 (for SonarQube scanner bootstrap)
+      - name: Set up JDK 17 (for SonarQube scanner bootstrap on main/PR)
         uses: actions/setup-java@v4
         with:
           java-version: "17"
@@ -77,11 +77,12 @@ jobs:
 
       # ── SAST: SonarQube ─────────────────────────────────────────────────────
       # Mitigeert: CICD-03 | NEN-7510: 8.29
-      # Hard gate on all branches — no warning-only mode.
+      # Free plan: only main branch pushes and pull requests are supported.
       # SONAR_HOST_URL is a repository variable (vars.*), not a secret.
       # SonarQube server bootstrap sends Java-17-compiled scanner JARs,
       # so we temporarily switch JAVA_HOME to JDK 17 for this step only.
       - name: SonarQube Analysis
+        if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

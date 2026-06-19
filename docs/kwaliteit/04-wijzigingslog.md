@@ -6,13 +6,13 @@ Per branch wordt hieronder gedocumenteerd wat er is gewijzigd, waarom, en welk o
 
 ## fix/s2-remove-pii-logging
 
-**Eis:** S2 — Geen PII in logbestanden  
-**Status vóór:** Niet conform — naam, geboortedatum, patiënt-ID en geslacht werden als platte tekst gelogd  
+**Eis:** S2 — Geen PII in logbestanden
+**Status vóór:** Niet conform — naam, geboortedatum, patiënt-ID en geslacht werden als platte tekst gelogd
 **Status na:** Opgelost
 
 ### Probleem
 
-`AppointmentServiceImpl.getAppointmentsForPatientWithLogging()` schreef de volgende PII naar de applicatielog:
+`AppointmentServiceImpl.getAppointmentsForPatientWithLogging()` schreef PII naar de applicatielog:
 
 ```java
 log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonName()
@@ -21,29 +21,25 @@ log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonN
         + " gender=" + patient.getGender());
 ```
 
-Dit is een directe AVG-overtreding: persoonsgegevens (naam, geboortedatum, BSN-equivalent, geslacht) mogen niet als platte tekst in logbestanden staan (NEN-7510:2024 §8.17 — informatiebeveiliging in logbestanden).
+Dit is een AVG-overtreding (NEN-7510:2024 §8.17).
 
 ### Fix
-
-Logstatement herschreven zodat alleen de pseudonieme patiënt-UUID en de UUID van de ingelogde gebruiker worden gelogd:
 
 ```java
 log.info("[AUDIT] action=getAppointmentsForPatient patientUuid=" + patient.getUuid()
         + " userUuid=" + userUuid);
 ```
 
-De UUID is pseudoniem: zonder de koppeltabel in de database is een UUID niet herleidbaar tot een persoon.
-
 ### Ontwerppatroon
 
-**Substitute Safe Identifier** — directe persoonsgegevens vervangen door een pseudoniem sleutel (UUID) die niet buiten de applicatiecontext herleidbaar is.
+**Substitute Safe Identifier** — persoonsgegevens vervangen door een pseudoniem UUID.
 
 ### Gewijzigde bestanden
 
 | Bestand | Wijziging |
 |---------|-----------|
-| `api/.../impl/AppointmentServiceImpl.java` | PII verwijderd uit log statement; alleen `patientUuid` en `userUuid` gelogd |
+| `api/.../impl/AppointmentServiceImpl.java` | PII verwijderd uit logstatement |
 
 ### Regressiecontrole
 
-`getAppointmentsForPatientWithLogging` staat niet op de `AppointmentService`-interface en is daardoor niet testbaar via de Spring-proxy. De `AppointmentAuditLogTest` en `AppointmentServiceSecurityTest` dekken de onderliggende `getAppointmentsOfPatient`-aanroep indirect. Geen regressie verwacht.
+`getAppointmentsForPatientWithLogging` staat niet op de `AppointmentService`-interface. `AppointmentServiceSecurityTest` dekt `getAppointmentsOfPatient` indirect.

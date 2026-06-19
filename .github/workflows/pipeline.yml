@@ -125,7 +125,7 @@ jobs:
         with:
           sarif_file: openmrs-module-appointmentscheduling/snyk.sarif
         continue-on-error: true
-          
+
 
       # ── SBOM generatie + versioned opslag ────────────────────────────────────
       # NEN-7510: 8.8 (inventarisatie componenten) + 8.9 (configuratiebeheer)
@@ -235,7 +235,7 @@ jobs:
 
       - name: Build for CodeQL
         working-directory: ./openmrs-module-appointmentscheduling
-        run: mvn clean compile -U --no-transfer-progress -DskipTests
+        run: mvn clean package -U --no-transfer-progress -DskipTests
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

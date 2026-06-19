@@ -407,7 +407,7 @@ Snyk op Maven-dependencies (blokkeert bij CVSS ≥ 7, policy via `.snyk`); Trivy
 
 ### CICD-06 — Niet-gepinde GitHub Actions
 
-**Status: 📋 Gepland (sprint 4)**
+**Status: 📋 Nog uit te voeren.**
 
 **Actie:** Pin alle externe Actions op volledige SHA-hashes:
 

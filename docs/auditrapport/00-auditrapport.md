@@ -12,25 +12,25 @@
 
 ## 1. Executive Summary
 
-### RAG-status: 🟠 Oranje
+**RAG-status: 🟠 Oranje** — De module is na uitvoering van alle kritieke maatregelen veilig genoeg voor verdere ontwikkeling, maar nog niet productierijp zolang platform-EOL-risico's en een geplande supply chain-maatregel openstaan.
 
-Bij aanvang van de audit verkeerde de module in kritieke staat: vier bevindingen scoorden in de rode zone, waaronder een productiewachtwoord zichtbaar in de broncode en patiëntgegevens die onbeschermd in logbestanden werden weggeschreven. Na uitvoering van alle P1- en P2-maatregelen zijn de meest kritieke risico's opgelost. De module is niet productierijp zolang de onderliggende platform-EOL-risico's (OpenMRS 1.9.9, Java 7 runtime) en de geplande GitHub Actions-pinning (CICD-06) nog openstaan.
+Bij aanvang van de audit verkeerde de module in kritieke staat: vier bevindingen scoorden in de rode zone, waaronder een productiewachtwoord zichtbaar in de broncode en patiëntgegevens die onbeschermd in logbestanden werden weggeschreven. Na uitvoering van alle P1- en P2-maatregelen zijn de meest urgente risico's opgelost. De module voldoet voor het module-gedeelte aan de relevante NEN-7510:2024-2 controls; de CRA-verplichtingen zijn voor zover ze binnen de scope van de module vallen aantoonbaar gedekt. Resterende risico's op platform- en infrastructuurniveau zijn bewust geaccepteerd en gedocumenteerd.
 
-### Top 3 risico's voor de organisatie
+## Top 3 risico's voor de organisatie
 
-| #   | Risico (in zorg-taal)                                                                                                                                                                                  | Ernst      | Status                              |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ----------------------------------- |
-| 1   | Patiëntgegevens (naam, geboortedatum, BSN) werden onbeschermd weggeschreven in logbestanden die voor beheerders zonder medische noodzaak toegankelijk zijn — direct in strijd met de privacywetgeving  | 🔴 Kritiek | ✅ Opgelost                         |
-| 2   | Een databasewachtwoord stond letterlijk in de broncode en is zichtbaar geweest voor iedereen met leestoegang tot de repository, waarmee directe toegang tot alle patiënt- en afspraakdata mogelijk was | 🔴 Kritiek | ✅ Opgelost (wachtwoord te roteren) |
-| 3   | Elke medewerker met een account kon afspraken van alle patiënten inzien, ook van patiënten die zij niet behandelen — een directe privacyschending                                                      | 🔴 Kritiek | ✅ Opgelost                         |
+| #   | Risico                                                                                                                                                                                                                                                                                                                                     | Ernst      | Status                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ----------------------------------- |
+| 1   | Patiëntgegevens — waaronder naam, geboortedatum en patiëntidentificatoren — werden onbeschermd weggeschreven in logbestanden. Deze bestanden waren toegankelijk voor beheerders zonder medische noodzaak, wat de zorginstelling blootstelde aan meldplicht bij de Autoriteit Persoonsgegevens, boetes tot € 20 miljoen en reputatieschade. | 🔴 Kritiek | ✅ Opgelost                         |
+| 2   | Een databasewachtwoord stond letterlijk in de broncode en was zichtbaar voor iedereen met leestoegang tot de repository. Hiermee was directe toegang tot alle patiënt- en afspraakdata mogelijk — een datalek dat de zorgcontinuïteit, het patiëntvertrouwen en de juridische positie van de instelling ernstig had kunnen schaden.        | 🔴 Kritiek | ✅ Opgelost (wachtwoord te roteren) |
+| 3   | Elke medewerker met een account kon afspraken van alle patiënten inzien, ook van patiënten die zij niet behandelen. Dit is een directe schending van de privacywetgeving en het medisch beroepsgeheim, met bijbehorend risico op boetes en verlies van patiëntvertrouwen.                                                                  | 🔴 Kritiek | ✅ Opgelost                         |
 
-### Geprioriteerde roadmap
+## Geprioriteerde roadmap
 
-| Prioriteit     | Actie                                                                            | Termijn               |
-| -------------- | -------------------------------------------------------------------------------- | --------------------- |
-| 🔴 Nu          | Wachtwoord `Appt@Export2021!` roteren — staat aantoonbaar in 7 git-commits       | Direct                |
-| 🟠 Deze sprint | CICD-06: GitHub Actions-versies pinnen op SHA-hashes (supply chain bescherming)  | Sprint 4              |
-| 🟢 Later       | Platform-upgrade naar OpenMRS 2.x + Java 8/11 (OpenMRS 1.9.9 en Java 7 zijn EOL) | Roadmap opdrachtgever |
+| Prioriteit     | Actie                                                                                                                                       | Termijn               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| 🔴 Nu          | Wachtwoord `Appt@Export2021!` roteren — staat aantoonbaar in de git-geschiedenis van de repository                                          | Direct                |
+| 🟠 Deze sprint | GitHub Actions-versies pinnen op vaste hashes als bescherming tegen aanvallen via de softwareleveringsketen                                 | Sprint 4              |
+| 🟢 Later       | Platform-upgrade naar een actuele OpenMRS-versie met ondersteunde Java-runtime — de huidige versies ontvangen geen beveiligingsupdates meer | Roadmap opdrachtgever |
 
 ---
 
@@ -593,21 +593,6 @@ Voor de vastgestelde kwetsbaarheden in de eigen module is het volgende proces ge
 - Selectie van Qodana-bevindingen die wél en níet worden opgelost in dit project, op basis van ernst en effort
 - Formulering en onderbouwing van het responsible-disclosure-beleid
 - Beoordeling of gevonden bevindingen CRA-meldplichtig zijn (conclusie: nee, geen actief misbruik vastgesteld)
-
----
-
-## Checklist vóór oplevering
-
-- [ ] Executive summary ≤ 400 woorden, geen jargon, RAG-status onderbouwd
-- [x] Minimaal 4 volledig uitgewerkte bevindingen in sectie 4 (R01, R02, R03, R04, R13, R14)
-- [x] Traceability matrix met minimaal 5 NEN-7510 controls, elk met verifieerbaar bewijs
-- [x] Alle bijlagen gerefereerd vanuit de hoofdtekst
-- [x] SBOM-sectie aanwezig (vul versienummers in uit `sbom/sbom-{versie}-{datum}.json` van de GitHub Actions pipeline)
-- [x] CRA-mapping aanwezig
-- [ ] AI-tooling verantwoording ingevuld (vul jouw eigen tekst in)
-- [x] Geen bevindingen verzwegen — open/onopgeloste bevindingen opgenomen (CICD-06, PT-08, wachtwoordrotatie R02)
-- [ ] Auteursnamen ingevuld (repository-URL is ingevuld)
-- [ ] Document opgeslagen als artefact in de repository (PDF of Word)
 
 ---
 

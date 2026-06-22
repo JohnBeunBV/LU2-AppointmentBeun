@@ -1,0 +1,60 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Snyk Open Source",
+          "semanticVersion": "1.1305.1",
+          "version": "1.1305.1",
+          "informationUri": "https://docs.snyk.io/",
+          "properties": {
+            "artifactsScanned": 0
+          },
+          "rules": []
+        }
+      },
+      "automationDetails": {
+        "id": "Snyk/Open Source/org.openmrs.module:appointmentscheduling/0/2026-06-19T21:13:47.185Z"
+      },
+      "results": []
+    },
+    {
+      "tool": {
+        "driver": {
+          "name": "Snyk Open Source",
+          "semanticVersion": "1.1305.1",
+          "version": "1.1305.1",
+          "informationUri": "https://docs.snyk.io/",
+          "properties": {
+            "artifactsScanned": 102
+          },
+          "rules": []
+        }
+      },
+      "automationDetails": {
+        "id": "Snyk/Open Source/org.openmrs.module:appointmentscheduling-api/1/2026-06-19T21:13:47.185Z"
+      },
+      "results": []
+    },
+    {
+      "tool": {
+        "driver": {
+          "name": "Snyk Open Source",
+          "semanticVersion": "1.1305.1",
+          "version": "1.1305.1",
+          "informationUri": "https://docs.snyk.io/",
+          "properties": {
+            "artifactsScanned": 59
+          },
+          "rules": []
+        }
+      },
+      "automationDetails": {
+        "id": "Snyk/Open Source/org.openmrs.module:appointmentscheduling-omod/2/2026-06-19T21:13:47.185Z"
+      },
+      "results": []
+    }
+  ]
+}

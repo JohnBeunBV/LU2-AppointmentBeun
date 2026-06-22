@@ -86,7 +86,7 @@ De volgende categorieën zijn bewust buiten scope geplaatst, conform `07-securit
 | Codekwaliteit       | Qodana (JetBrains, pipeline)                                                               | Bij elke PR                       | Qodana quality gate resultaat                                     |
 | SCA / CVE-scan      | Snyk (dependencies, CVSS ≥ 7) + Trivy (container image)                                    | Bij elke build + eindmeting       | Bijlage G — Snyk + Trivy rapport                                  |
 | Secret scanning     | Gitleaks (pipeline, sprint 2)                                                              | Bij elke commit                   | Pipeline-log                                                      |
-| SBOM-generatie      | CycloneDX Maven Plugin                                                                     | Build-tijd                        | `sbom/sbom-{versie}-{datum}.json` (pipeline-artifact) — Bijlage C |
+| SBOM-generatie      | CycloneDX Maven Plugin                                                                     | Build-tijd                        | `sbom/sbom-1.17.0-SNAPSHOT-2026-06-19.json` (pipeline-artifact) — Bijlage C |
 | Risicoanalyse       | ISO 27005 methode (kans × impact 1–5)                                                      | Sprint 2 (SOF-35/SOF-27)          | Bijlage E — `05-risicomatrix.md`                                  |
 | Threat modelling    | Microsoft TMT (C4-gebaseerd, bow-tie)                                                      | Sprint 2/3 (SOF-38, SOF-42)       | Bijlage F — `06-bowtie.md`                                        |
 | Penetration testing | White-box SAST + dynamische validatie op Docker-omgeving                                   | Sprint 3 (SOF-47)                 | Bijlage J — `14-pentest-rapport.md`                               |
@@ -417,22 +417,22 @@ return super.sessionFactory.getCurrentSession().createQuery(hql)
 
 ## 5. SBOM & Supply Chain Security
 
-> **Bronmateriaal:** `sbom/sbom-{versie}-{datum}.json` (pipeline-artifact GitHub Actions), Snyk + Trivy scanresultaten (bijlage G). Zie bijlage C voor de volledige CycloneDX JSON.
+> **Bronmateriaal:** `sbom/sbom-1.17.0-SNAPSHOT-2026-06-19.json` (pipeline-artifact GitHub Actions), Snyk + Trivy scanresultaten (bijlage G). Zie bijlage C voor de volledige CycloneDX JSON.
 
-| Component                       | Versie     | Licentie   | Bekende CVE's                           | Status                                  |
-| ------------------------------- | ---------- | ---------- | --------------------------------------- | --------------------------------------- |
-| OpenMRS Core                    | 1.9.9      | MPL 2.0    | Meerdere (platform EOL — buiten scope)  | ⚠️ EOL — platformverantwoordelijkheid   |
-| Java Runtime (Zulu JRE 7)       | 7.x        | Various    | Geen security-updates meer (Java 7 EOL) | ⚠️ EOL — platformvereiste OpenMRS 1.9.9 |
-| Tomcat                          | 8.0.53     | Apache 2.0 | CVE-2020-9484 (laag risico in config)   | Laatste Java-7-compatibele release      |
-| Spring Framework                | [zie sbom] | Apache 2.0 | [zie Snyk rapport — bijlage G]          | [zie scan]                              |
-| Hibernate ORM                   | [zie sbom] | LGPL 2.1   | [zie Snyk rapport — bijlage G]          | [zie scan]                              |
-| openmrs-api                     | 1.9.9      | MPL 2.0    | Platform-CVE's buiten scope             | ⚠️ EOL                                  |
-| openmrs-module-webservices.rest | 2.5.e52eb0 | MPL 2.0    | [zie Snyk rapport]                      | [zie scan]                              |
-| Apache Commons Logging          | [zie sbom] | Apache 2.0 | —                                       | OK                                      |
-| Log4j (transitief)              | [zie sbom] | Apache 2.0 | CVE-2021-44228 Log4Shell                | [zie Trivy scan — bijlage G]            |
-| MySQL Connector/J               | [zie sbom] | GPL 2.0    | [zie Snyk rapport]                      | [zie scan]                              |
+| Component                       | Versie            | Licentie   | Bekende CVE's                                                                    | Status                                                       |
+| ------------------------------- | ----------------- | ---------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| OpenMRS Core                    | 1.9.9             | MPL 2.0    | Meerdere (platform EOL — buiten scope)                                           | ⚠️ EOL — platformverantwoordelijkheid                        |
+| Java Runtime (Zulu JRE 7)       | 7.x               | Various    | Geen security-updates meer (Java 7 EOL)                                          | ⚠️ EOL — platformvereiste OpenMRS 1.9.9                      |
+| Tomcat                          | 8.0.53            | Apache 2.0 | CVE-2020-9484 (laag risico in config)                                            | Laatste Java-7-compatibele release                           |
+| Spring Framework                | 3.0.5.RELEASE     | Apache 2.0 | CVE-2022-22965 (Spring4Shell — transitief via openmrs-api)                       | ⚠️ Onderdrukt via .snyk policy (platform-EOL, buiten scope)  |
+| Hibernate ORM                   | 3.6.5.Final-mod   | LGPL 2.1   | Geen actieve bevindingen in Snyk scan                                            | ✅ OK                                                         |
+| openmrs-api                     | 1.9.9             | MPL 2.0    | Platform-CVE's buiten scope                                                      | ⚠️ EOL                                                       |
+| openmrs-module-webservices.rest | 2.5               | MPL 2.0    | Geen actieve bevindingen in Snyk scan                                            | ✅ OK                                                         |
+| SLF4J / JCL Bridge              | 1.6.0             | MIT        | —                                                                                | ✅ OK                                                         |
+| Log4j (transitief)              | 1.2.15            | Apache 2.0 | CVE-2019-17571, CVE-2022-23302/05/07 (transitief via openmrs-api)                | ⚠️ Onderdrukt via .snyk policy (platform-EOL, buiten scope)  |
+| MySQL Connector/J               | 5.1.28            | GPL 2.0    | Geen actieve bevindingen in Snyk scan                                            | ✅ OK                                                         |
 
-> **Let op:** Vul de versienummers in uit het SBOM-artifact (`sbom/sbom-{versie}-{datum}.json`, bijlage C) en koppel de CVE-bevindingen uit het Snyk rapport (bijlage G). Log4Shell is bijzonder relevant gezien het logging-framework in de module.
+> **Bronnen:** SBOM gegenereerd via CycloneDX Maven Plugin 2.8.0 (2026-06-19T21:14Z). Snyk SCA: 0 actieve bevindingen — alle 86 CVE-paden onderdrukt via `.snyk` policy (transitieve afhankelijkheden van `openmrs-api:1.9.9`, buiten projectscope). Policy verloopt 2027-06-18.
 
 **Relevante NEN-7510 controls:**
 
@@ -479,7 +479,7 @@ De module is **niet productierijp** zolang:
 | ------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | A       | Gap-analyse — sprint 1 (juni 2026) + re-evaluatie sprint 3 (18 juni 2026)                                     | `01-gap-analyse.md`, `13-gap-analyse-logging.md`                      |
 | B       | Traceability matrix (dit document, §9)                                                                        | Zie sectie 9 hieronder                                                |
-| C       | SBOM (CycloneDX JSON) — gegenereerd per CI-run; eindmeting sprint 3 (juni 2026)                               | `sbom/sbom-{versie}-{datum}.json` (pipeline-artifact, GitHub Actions) |
+| C       | SBOM (CycloneDX JSON) — gegenereerd per CI-run; eindmeting sprint 3 (juni 2026)                               | `sbom/sbom-1.17.0-SNAPSHOT-2026-06-19.json` (pipeline-artifact, GitHub Actions) |
 | D       | SAST-output — CodeQL security-extended scan (eindmeting PR #22, 19 juni 2026) + SonarQube quality gate export | GitHub Actions artifact "codeql-results" + SonarQube dashboard        |
 | E       | Risicomatrix — sprint 2 (juni 2026) + update sprint 3 (18 juni 2026)                                          | `05-risicomatrix.md`                                                  |
 | F       | Bow-tie diagrammen / threat models — sprint 2/3 (juni 2026)                                                   | `06-bowtie.md`, `10-cicd-bowtie.md`, `12-attack-surface.md`           |
@@ -500,7 +500,7 @@ De module is **niet productierijp** zolang:
 | CRA-verplichting                                         | NEN-7510:2024-2 control                                   | Status in dit project                                                                    |
 | -------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Software leveren zonder bekende (actieve) kwetsbaarheden | A.8.8 — Beheer van technische kwetsbaarheden              | ⚠️ Platform-CVE's (EOL) buiten scope; module-CVE's gemitigeerd                           |
-| SBOM beschikbaar stellen aan gebruikers                  | A.8.8 + A.5.22 — Monitoring leveranciers                  | ✅ `sbom/sbom-{versie}-{datum}.json` aanwezig (pipeline-artifact) + Snyk + Trivy scan    |
+| SBOM beschikbaar stellen aan gebruikers                  | A.8.8 + A.5.22 — Monitoring leveranciers                  | ✅ `sbom/sbom-1.17.0-SNAPSHOT-2026-06-19.json` aanwezig (pipeline-artifact) + Snyk + Trivy scan    |
 | Beveiligingsupdates leveren gedurende de levensduur      | A.8.8 — Patch management                                  | ⚠️ Java 7 / OpenMRS 1.9.9 EOL — geen updates meer beschikbaar                            |
 | Secure by design                                         | A.8.25 — Beveiligd ontwikkelproces                        | ✅ Gitleaks + Snyk + Trivy gates in pipeline (SonarQube soft gate — free plan beperking) |
 | Actief misbruikte kwetsbaarheden melden aan ENISA        | A.6.8 — Rapportage van beveiligingsgebeurtenissen         | ✅ Responsible disclosure procedure (sectie 10)                                          |

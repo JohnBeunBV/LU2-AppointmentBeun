@@ -4,6 +4,60 @@ Per branch wordt hieronder gedocumenteerd wat er is gewijzigd, waarom, en welk o
 
 ---
 
+## fix/open-redirect-appointmentblock
+
+**Eis:** S — Open Redirect (SonarCloud security hotspot / OWASP A01:2021)
+**Prioriteit:** Hoog
+**Status vóór:** Kwetsbaar — gebruiker-gecontroleerde `redirectedFrom` parameter direct gebruikt in redirect
+**Status na:** Opgelost
+
+### Probleem
+
+`AppointmentBlockFormController.onSubmit()` stuurde de gebruiker door naar een door de gebruiker opgegeven URL:
+
+```java
+return "redirect:" + redirectedFrom;
+```
+
+Een aanvaller kon dit misbruiken door een link te construeren als:
+
+```
+/appointmentBlockForm?redirectedFrom=https://evil.com
+```
+
+Na het opslaan van een afspraakblok wordt de gebruiker dan doorgestuurd naar de aanvaller-gecontroleerde site. Dit is een **Open Redirect** (CWE-601) — een OWASP Top 10 bevinding die phishing-aanvallen en token-diefstal mogelijk maakt.
+
+### Fix
+
+Whitelist toegevoegd met de twee enige legitieme bestemmingen. Elke andere waarde valt terug op een veilige standaard:
+
+```java
+private static final String DEFAULT_REDIRECT = "appointmentBlockList.list";
+private static final Set<String> ALLOWED_REDIRECTS = new HashSet<String>(
+    Arrays.asList("appointmentBlockCalendar.list", "appointmentBlockList.list"));
+
+// In onSubmit():
+String safeRedirect = (redirectedFrom != null && ALLOWED_REDIRECTS.contains(redirectedFrom))
+    ? redirectedFrom : DEFAULT_REDIRECT;
+return "redirect:" + safeRedirect;
+```
+
+### Ontwerppatroon
+
+**Whitelist Validation (Input Validation)** — accepteer alleen bekende, veilige waarden; wijs al het overige af naar een veilige standaard. Conform OWASP Input Validation Cheat Sheet.
+
+### Gewijzigde bestanden
+
+| Bestand | Wijziging |
+|---------|-----------|
+| `omod/.../web/controller/AppointmentBlockFormController.java` | Whitelist-constanten toegevoegd; redirect gevalideerd voor gebruik |
+
+### Regressiecontrole
+
+De twee bestaande aanroepers (`AppointmentBlockCalendarController` en `AppointmentBlockListController`) sturen respectievelijk `appointmentBlockCalendar.list` en `appointmentBlockList.list` — beide staan op de whitelist. Geen functionele wijziging voor normale gebruikers.
+
+---
+
 ## fix/s2-remove-pii-logging
 
 **Eis:** S2 — Geen PII in logbestanden  

@@ -15,9 +15,12 @@ package org.openmrs.module.appointmentscheduling.web.controller;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -56,9 +59,15 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @Controller
 public class AppointmentBlockFormController {
-	
+
 	/** Logger for this class and subclasses */
 	protected final Log log = LogFactory.getLog(getClass());
+
+	private static final String DEFAULT_REDIRECT = "appointmentBlockList.list";
+
+	// Whitelist of internal destinations accepted as redirectedFrom values.
+	private static final Set<String> ALLOWED_REDIRECTS = new HashSet<String>(
+	    Arrays.asList("appointmentBlockCalendar.list", "appointmentBlockList.list"));
 	
 	@InitBinder
 	public void initBinder(WebDataBinder binder) {
@@ -310,6 +319,8 @@ public class AppointmentBlockFormController {
 			}
 			
 		}
-		return "redirect:" + redirectedFrom;
+		String safeRedirect = (redirectedFrom != null && ALLOWED_REDIRECTS.contains(redirectedFrom))
+		    ? redirectedFrom : DEFAULT_REDIRECT;
+		return "redirect:" + safeRedirect;
 	}
 }

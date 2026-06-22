@@ -148,7 +148,10 @@ public class AppointmentBlockListController {
 				    "appointmentscheduling.AppointmentBlock.error.InvalidDateInterval");
 			}
 			// save details from the appointment block list page using http session
-			httpSession.setAttribute("chosenLocation", location);
+			// Re-fetch from DB so only a trusted, server-side object enters the session (CWE-501).
+			Location trustedLocation = (location != null)
+			    ? Context.getLocationService().getLocation(location.getId()) : null;
+			httpSession.setAttribute("chosenLocation", trustedLocation);
 			httpSession.setAttribute("fromDate", Context.getDateTimeFormat().format(fromDate).toString());
 			httpSession.setAttribute("toDate", Context.getDateTimeFormat().format(toDate).toString());
 			httpSession.setAttribute("lastLocale", Context.getLocale());

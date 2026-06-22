@@ -656,6 +656,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	}
 
     @Override
+    @Transactional(readOnly = true)
     public List<TimeSlot> getTimeSlotsByConstraints(AppointmentType appointmentType, Date fromDate, Date toDate, Provider provider, Location location, Patient excludeTimeSlotsWithPatient) throws APIException {
 
         List<TimeSlot> suitableTimeSlots = getTimeSlotsByConstraintsIncludingFull(
@@ -682,6 +683,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	}
 
     @Override
+    @Transactional(readOnly = true)
     public List<TimeSlot> getTimeSlotsByConstraintsIncludingFull(AppointmentType appointmentType, Date fromDate,
                                                                  Date toDate, Provider provider, Location location,
                                                                  Patient excludeTimeSlotsWithPatient) throws APIException {
@@ -789,6 +791,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsByConstraints(Date fromDate,
 			Date toDate, Location location, Provider provider,
 			AppointmentType type, AppointmentStatus status) throws APIException {
@@ -797,6 +800,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsByConstraints(Date fromDate,
 			  Date toDate, Location location, Provider provider,
 			  AppointmentType type, Patient patient,
@@ -813,6 +817,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsByConstraints(Date fromDate,
 			  Date toDate, Location location, Provider provider,
 			  AppointmentType type, Patient patient, List<AppointmentStatus> statuses,
@@ -1298,6 +1303,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public TimeSlot getTimeslotForAppointment(Location location, Provider provider, AppointmentType type, Date appointmentDate){
 		TimeSlot requiredTimeslot = null;
 
@@ -1469,6 +1475,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
      * Returns upcoming appointments for a patient.
      * R07 fix: PII (name, DOB, identifier, gender) removed from log — only UUID is logged.
      */
+    @Transactional(readOnly = true)
     public java.util.List<Appointment> getAppointmentsForPatientWithLogging(Patient patient) {
         String userUuid = Context.getAuthenticatedUser() != null ? Context.getAuthenticatedUser().getUuid() : "anonymous";
         log.info("[AUDIT] action=getAppointmentsForPatient patientUuid=" + patient.getUuid()

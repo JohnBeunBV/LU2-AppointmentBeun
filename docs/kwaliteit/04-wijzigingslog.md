@@ -4,6 +4,49 @@ Per branch wordt hieronder gedocumenteerd wat er is gewijzigd, waarom, en welk o
 
 ---
 
+## fix/transactional-annotations
+
+**Eis:** Betrouwbaarheid — @Transactional-incompatibiliteit (SonarCloud Blocker, regel S2229)
+**Prioriteit:** Blocker (7 bevindingen)
+**Status voor:** 7 methoden riepen intern methoden aan met `@Transactional(readOnly = true)`, maar hadden zelf geen `@Transactional`-annotatie
+**Status na:** Opgelost
+
+### Probleem
+
+In Spring werkt `@Transactional` via een proxy-object. Als een bean zijn eigen methode aanroept (self-invocation), wordt die proxy omzeild en heeft de `@Transactional`-annotatie van de aangeroepen methode geen effect. Als de aanroepende methode zelf ook geen annotatie heeft, draait de query mogelijk buiten een transactie of in een verkeerde context, wat tot Hibernate sessie-fouten of inconsistente reads kan leiden.
+
+Getroffen methoden in `AppointmentServiceImpl.java`:
+
+| Methode | Regel | Aanroep naar (readOnly) |
+|---------|-------|------------------------|
+| `getTimeSlotsByConstraints` (6 params) | L659 | `getTimeLeftInTimeSlot` |
+| `getTimeSlotsByConstraintsIncludingFull` (6 params) | L685 | `getAllLocationDescendants`, `getAppointmentsOfPatient` |
+| `getAppointmentsByConstraints` (AppointmentStatus) | L792 | overload-keten |
+| `getAppointmentsByConstraints` (7 params) | L800 | overload-keten |
+| `getAppointmentsByConstraints` (9 params) | L816 | `getAllLocationDescendants` |
+| `getTimeslotForAppointment` | L1301 | `getTimeSlotsByConstraintsIncludingFull` |
+| `getAppointmentsForPatientWithLogging` | L1472 | `getAppointmentsOfPatient` |
+
+### Fix
+
+`@Transactional(readOnly = true)` toegevoegd aan alle 7 methoden. Ze lezen uitsluitend data, dus `readOnly = true` is correct en consistent met de methoden die ze aanroepen.
+
+### Ontwerppatroon
+
+**Consistent Transaction Boundary** — transactiegrenzen expliciet en consistent gemaakt door elk niveau in de aanroepketen dezelfde annotatiecontext te geven.
+
+### Gewijzigde bestanden
+
+| Bestand | Wijziging |
+|---------|-----------|
+| `api/.../api/impl/AppointmentServiceImpl.java` | `@Transactional(readOnly = true)` toegevoegd aan 7 methoden |
+
+### Regressiecontrole
+
+Alle betrokken methoden zijn pure read-operaties. `readOnly = true` verbiedt schrijven in die transactie, maar dat deed geen van deze methoden. Geen functionele wijziging.
+
+---
+
 ## fix/s2-remove-pii-logging
 
 **Eis:** S2 — Geen PII in logbestanden  

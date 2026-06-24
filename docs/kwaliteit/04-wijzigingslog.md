@@ -58,6 +58,56 @@ De twee bestaande aanroepers (`AppointmentBlockCalendarController` en `Appointme
 
 ---
 
+## fix/trust-boundary-session
+
+**Eis:** S — Trust Boundary Violation (CodeQL High, CWE-501)
+**Prioriteit:** Hoog (2 bevindingen, GitHub Security issues #374 en #375)
+**Status voor:** Gebruikersinvoer (`@RequestParam Location`) direct opgeslagen in de HTTP-sessie
+**Status na:** Opgelost
+
+### Probleem
+
+In Spring MVC wordt `@RequestParam(value = "locationId") Location location` automatisch omgezet door een `LocationEditor`: de integer-ID uit het HTTP-verzoek wordt als sleutel gebruikt om een `Location`-object op te halen. Maar CodeQL beschouwt de binding zelf als gebruikersinvoer en markeert de directe opslag in de sessie als een trust boundary violation:
+
+```java
+// Vóór (beide controllers):
+httpSession.setAttribute("chosenLocation", location);  // ← tainted by @RequestParam
+```
+
+De sessie is een vertrouwde zone binnen de applicatie. Door gebruikersinvoer er direct in te schrijven, kan kwaadaardige of onverwachte input de sessiestaat besmetten.
+
+Gevonden in:
+- `AppointmentBlockListController.java` regel 151
+- `AppointmentBlockCalendarController.java` regel 150
+
+### Fix
+
+De `Location` expliciet opnieuw ophalen uit de database via `Context.getLocationService().getLocation()`. Dit verbreekt de taint-keten: de sessie ontvangt een object dat aantoonbaar afkomstig is van een vertrouwde bron (de database), niet van de HTTP-request.
+
+```java
+// Na (beide controllers):
+Location trustedLocation = (location != null)
+    ? Context.getLocationService().getLocation(location.getId()) : null;
+httpSession.setAttribute("chosenLocation", trustedLocation);
+```
+
+### Ontwerppatroon
+
+**Explicit Trust Validation** — data die een trust boundary (HTTP-request naar sessie) oversteekt, wordt eerst gevalideerd via een vertrouwde bron (de database) voordat het wordt opgeslagen. Conform OWASP Session Management Cheat Sheet.
+
+### Gewijzigde bestanden
+
+| Bestand | Wijziging |
+|---------|-----------|
+| `omod/.../web/controller/AppointmentBlockListController.java` | `location` opnieuw ophalen via `getLocation()` voor sessie-opslag (regel 151) |
+| `omod/.../web/controller/AppointmentBlockCalendarController.java` | Idem (regel 150) |
+
+### Regressiecontrole
+
+De `Location` die in de sessie belandt is functioneel identiek aan de vorige waarde — het is hetzelfde object, nu expliciet via de database opgehaald. De GET-handler die de sessie uitleest (`chosenLocation`) ontvangt dezelfde `Location`-instantie. Geen functionele wijziging.
+
+---
+
 ## fix/s2-remove-pii-logging
 
 **Eis:** S2 — Geen PII in logbestanden  

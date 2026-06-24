@@ -147,7 +147,10 @@ public class AppointmentBlockCalendarController {
 			cal.setTimeInMillis(toDate);
 			Date toDateAsDate = cal.getTime();
 			HttpSession httpSession = request.getSession();
-			httpSession.setAttribute("chosenLocation", location);
+			// Re-fetch from DB so only a trusted, server-side object enters the session (CWE-501).
+			Location trustedLocation = (location != null)
+			    ? Context.getLocationService().getLocation(location.getId()) : null;
+			httpSession.setAttribute("chosenLocation", trustedLocation);
 			httpSession.setAttribute("lastLocale", Context.getLocale());
 			httpSession.setAttribute("chosenProvider", providerId);
 			httpSession.setAttribute("chosenType", appointmentTypeId);
